@@ -80,9 +80,20 @@ value = (raw / scale * 10^(-dec) + shift) * mul
 ### 2.2 What this means for implementation
 
 - **Parsing is nearly free.** 161 of 186 channels are `dtype_a=7, dtype=4`, i.e.
-  raw `float32`, with `scale=1, mul=1, dec=0, shift=0`. Such a channel is read as
-  `new Float32Array(buffer, offset, count)` — no copy, no arithmetic. Only a
-  handful of channels actually need scaling. WASM is not required.
+  raw `float32`, with `scale=1, mul=1, dec=0, shift=0` — no arithmetic needed.
+  WASM is not required.
+- **But data blocks are not aligned.** Measured on both samples: 79 of the 186
+  4-byte channels start at an offset with `offset % 4 == 2`. A typed-array view
+  requires the offset to be a multiple of the element size, so
+  `new Float32Array(buffer, offset, count)` throws for those channels. The reader
+  therefore branches: aligned channels get a zero-copy view, misaligned ones get
+  one `slice()` of their byte range into a fresh aligned buffer. That is a single
+  memcpy per channel, performed once and cached. 2-byte channels are always
+  2-aligned, so they never need the copy.
+- **Data blocks are contiguous.** Verified on both samples: walking the channel
+  list in order, the blocks follow one another with zero gaps and zero overlaps,
+  and the metadata region ends exactly where the data region begins. A channel's
+  byte length is therefore `count × width`, and the file needs no free-space map.
 - **The channel identifier is the full name.** Verified: 186 of 186 full names are
   unique in both files. Short names are not — 102 distinct across 186 channels
   (`TPress` occurs four times). Short names are fit for labels only.
