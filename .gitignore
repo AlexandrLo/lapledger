@@ -1,6 +1,7 @@
 temp/
 .vscode/
 .superpowers/
+.claude/
 
 # Logs
 logs
