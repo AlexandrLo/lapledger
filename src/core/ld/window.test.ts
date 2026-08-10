@@ -69,4 +69,51 @@ describe('ByteWindow', () => {
     expect(() => win.u32(6)).toThrow(/outside window/);
     expect(() => win.u32(-4)).toThrow(/outside window/);
   });
+
+  it('reads from Uint8Array views with non-zero byteOffset (scalar)', () => {
+    // Create a parent buffer and a view into it with byteOffset=2
+    const parent = new ArrayBuffer(32);
+    const view = new Uint8Array(parent, 2, 30); // view covers bytes 2-31 of parent
+    const win = new ByteWindow(view, 1000);
+
+    // Write a u32 at parent offset 4, which is local offset 2 in the view
+    new DataView(parent).setUint32(4, 0xdeadbeef, true);
+
+    // Read at window offset 1002 (local=2, absolute=4 in parent)
+    expect(win.u32(1002)).toBe(0xdeadbeef);
+  });
+
+  it('f32Array with non-zero byteOffset returns zero-copy when aligned in parent buffer', () => {
+    const parent = new ArrayBuffer(32);
+    const view = new Uint8Array(parent, 2, 30);
+    const win = new ByteWindow(view, 1000);
+
+    // Write f32 at parent offset 4, which is local offset 2 in view
+    new DataView(parent).setFloat32(4, 1.5, true);
+
+    // Read at window offset 1002 (local=2, absolute=4 in parent) - aligned
+    const arr = win.f32Array(1002, 1);
+    expect(arr[0]).toBe(1.5);
+
+    // Mutate parent buffer - should affect the array (zero-copy)
+    new DataView(parent).setFloat32(4, 2.5, true);
+    expect(arr[0]).toBe(2.5);
+  });
+
+  it('f32Array with non-zero byteOffset returns copy when misaligned in parent buffer', () => {
+    const parent = new ArrayBuffer(32);
+    const view = new Uint8Array(parent, 2, 30);
+    const win = new ByteWindow(view, 1000);
+
+    // Write f32 at parent offset 2, which is local offset 0 in view
+    new DataView(parent).setFloat32(2, 1.5, true);
+
+    // Read at window offset 1000 (local=0, absolute=2 in parent) - misaligned
+    const arr = win.f32Array(1000, 1);
+    expect(arr[0]).toBe(1.5);
+
+    // Mutate parent buffer - should NOT affect the array (copy)
+    new DataView(parent).setFloat32(2, 2.5, true);
+    expect(arr[0]).toBe(1.5);
+  });
 });

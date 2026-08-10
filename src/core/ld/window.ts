@@ -6,12 +6,13 @@
  * whole file.
  */
 export class ByteWindow {
+  private readonly bytes: Uint8Array;
+  readonly base: number;
   private readonly view: DataView;
 
-  constructor(
-    private readonly bytes: Uint8Array,
-    readonly base = 0,
-  ) {
+  constructor(bytes: Uint8Array, base = 0) {
+    this.bytes = bytes;
+    this.base = base;
     this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   }
 
