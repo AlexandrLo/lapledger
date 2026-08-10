@@ -19,6 +19,11 @@ visual layer. Nothing in this plan consumes headings or renders anything.
 - All files in this repository are written in **English** — documentation, comments, commit messages, identifiers.
 - Commit messages must **not** contain a `Co-Authored-By` trailer.
 - TypeScript `strict: true`. No `any` in exported signatures.
+- The Vite template sets `erasableSyntaxOnly: true`, so TypeScript-only runtime
+  syntax is banned: no constructor parameter properties, no `enum`, no
+  `namespace`, no decorators. Vitest strips types with esbuild and does not
+  enforce this, so **every task must run `npx tsc -b` as well as `npm test`**
+  before committing — otherwise the build breaks while the tests stay green.
 - `src/core/**` must not import from `src/app/**`, `src/worker/**`, or any DOM API.
 - `src/core/**` must have zero runtime dependencies.
 - Little-endian for every binary read.
@@ -292,12 +297,17 @@ Create `src/core/ld/window.ts`:
  * whole file.
  */
 export class ByteWindow {
+  private readonly bytes: Uint8Array;
+  readonly base: number;
   private readonly view: DataView;
 
-  constructor(
-    private readonly bytes: Uint8Array,
-    readonly base = 0,
-  ) {
+  // Fields are declared and assigned explicitly rather than with constructor
+  // parameter properties: the Vite template sets `erasableSyntaxOnly: true`,
+  // which rejects that shorthand (TS1294). Vitest strips types with esbuild and
+  // does not enforce the flag, so `npm test` passes while `npm run build` fails.
+  constructor(bytes: Uint8Array, base = 0) {
+    this.bytes = bytes;
+    this.base = base;
     this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   }
 
