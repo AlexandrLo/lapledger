@@ -92,7 +92,7 @@ export function buildLd(opts: FixtureOptions): Uint8Array {
     const isFloat = (c.dtypeA ?? 7) === 7;
     c.values.forEach((v, k) => {
       const at = offsets[i] + k * width;
-      if (isFloat) view.setFloat32(at, v, true);
+      if (isFloat && width === 4) view.setFloat32(at, v, true);
       else if (width === 2) view.setInt16(at, v, true);
       else view.setInt32(at, v, true);
     });
