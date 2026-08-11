@@ -584,7 +584,11 @@ export function buildLd(opts: FixtureOptions): Uint8Array {
     const isFloat = (c.dtypeA ?? 7) === 7;
     c.values.forEach((v, k) => {
       const at = offsets[i] + k * width;
-      if (isFloat) view.setFloat32(at, v, true);
+      // `width === 4` is not redundant: a float16 fixture (dtypeA 7, dtype 2)
+      // declares a 2-byte slot, and setFloat32 would write 4 bytes into it —
+      // silently corrupting the next channel's data, or throwing a DataView
+      // range error when it is the last channel.
+      if (isFloat && width === 4) view.setFloat32(at, v, true);
       else if (width === 2) view.setInt16(at, v, true);
       else view.setInt32(at, v, true);
     });
