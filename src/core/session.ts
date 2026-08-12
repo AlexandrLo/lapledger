@@ -43,10 +43,42 @@ export type SessionMeta = {
 export type Session = {
   meta: SessionMeta;
   grid: DistanceGrid;
+  /**
+   * The whole channel at its own sample rate, decoded to physical units.
+   *
+   * The returned array owns its buffer: it is neither a view over the file nor
+   * shared with any other channel, so it is safe to hand to
+   * `postMessage(values, [values.buffer])` and safe to write into. The copy is
+   * made once per channel and cached, so repeated calls return the same array
+   * — transfer it and this session can no longer serve it.
+   */
   channel(name: string): Float32Array;
+  /**
+   * One channel resampled onto `grid` for one lap.
+   *
+   * Throws for `Lap Time`: see `elapsed`.
+   */
   series(lapNumber: number, channelName: string): Float32Array;
+  /**
+   * Elapsed time within the lap, in seconds, at every node of `grid`.
+   *
+   * Monotone non-decreasing and starting at 0 by construction, because it is
+   * derived from the lap's position basis rather than from the `Lap Time`
+   * channel. This is the array to feed `computeDelta` — including for a
+   * cross-session comparison, where the two laps come from different `Session`
+   * objects that share a grid.
+   */
+  elapsed(lapNumber: number): Float32Array;
+  /** Shorthand for `computeDelta(elapsed(referenceLap), elapsed(comparisonLap))`. */
   delta(referenceLap: number, comparisonLap: number): Float32Array;
 };
+
+/**
+ * Distinguishes two sessions opened from different files recorded at the same
+ * venue in the same second, which would otherwise collide on the descriptive
+ * default id below.
+ */
+let sessionSequence = 0;
 
 export type OpenSessionOptions = {
   fileName?: string;
@@ -68,7 +100,7 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
     if (cached) return cached;
     const ld = byName.get(name);
     if (!ld) throw new Error(`no channel named "${name}" in this session`);
-    const values = decodeChannel(win, ld);
+    const values = own(decodeChannel(win, ld));
     decoded.set(name, values);
     return values;
   };
@@ -97,7 +129,7 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
   const grid = makeDistanceGrid(length, { approximate });
 
   const meta: SessionMeta = {
-    id: options.id ?? `${header.venue}-${header.date}-${header.time}`,
+    id: options.id ?? `${header.venue}-${header.date}-${header.time}-${++sessionSequence}`,
     fileName: options.fileName ?? '',
     driver: header.driver,
     vehicle: header.vehicle,
@@ -130,6 +162,16 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
 
   const seriesCache = new Map<string, Float32Array>();
   const lapSeries = (lapNumber: number, channelName: string): Float32Array => {
+    if (channelName === LAP_TIME) {
+      throw new Error(
+        `"${LAP_TIME}" cannot be resampled per lap: the raw channel does not reset in step ` +
+          'with the lap\'s Car Pos Norm wrap, so on real recordings the resulting series is ' +
+          'non-monotone or ends at the wrong value on roughly a third of laps, and a delta ' +
+          `built from two of them is wrong by tens of seconds. Use elapsed(${lapNumber}) ` +
+          `instead, or channel("${LAP_TIME}") for the raw samples.`,
+      );
+    }
+
     const key = `${lapNumber} ${channelName}`;
     const cached = seriesCache.get(key);
     if (cached) return cached;
@@ -159,8 +201,26 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
     grid,
     channel,
     series: lapSeries,
+    elapsed,
     delta: (referenceLap, comparisonLap) => computeDelta(elapsed(referenceLap), elapsed(comparisonLap)),
   };
+}
+
+/**
+ * Detaches a decoded channel from the file it came from.
+ *
+ * `ByteWindow` hands out zero-copy views for aligned channels and
+ * `decodeChannel` passes them straight through when no scaling is needed — 94
+ * of the Monza recording's 186 channels arrive as views over the whole
+ * 30 MB file buffer. That is right internally and wrong at the library edge:
+ * transferring such a view to a worker detaches the entire file and kills
+ * every other channel, cloning one copies 30 MB to deliver 230 KB, and writing
+ * into one corrupts the bytes every later decode reads. Copying here costs one
+ * pass per channel, paid once because the caller caches the result.
+ */
+function own(values: Float32Array): Float32Array {
+  const isWholeBuffer = values.byteOffset === 0 && values.buffer.byteLength === values.byteLength;
+  return isWholeBuffer ? values : values.slice();
 }
 
 function toChannelMeta(channel: LdChannel): ChannelMeta {

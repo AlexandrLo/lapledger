@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { openSession } from '../../src/core';
+import { computeDelta, openSession } from '../../src/core';
 import { parseLdx } from '../../src/core/ld/ldx';
 import { findSampleFiles, samplesAvailable } from '../fixtures/samples';
 
@@ -184,6 +184,97 @@ describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files',
           ).toBeLessThan(0.3);
         },
       );
+
+      // FIX 1: series(lap, 'Lap Time') is non-monotone or ends at the wrong
+      // value on 5 of 14 complete Monza laps and 13 of 33 Knockhill laps, and
+      // a delta built from two of them ended at -20.293 s on Knockhill laps
+      // 1 vs 2 where the correct answer is -5.086 s.
+      it('refuses to resample the raw Lap Time channel', () => {
+        const lap = session.meta.laps.find((l) => l.complete)!;
+        expect(() => session.series(lap.number, 'Lap Time')).toThrow(/elapsed/);
+      });
+
+      it('gives elapsed lap time that starts at zero and never goes backwards, on every complete lap', () => {
+        for (const lap of session.meta.laps.filter((l) => l.complete)) {
+          const elapsed = session.elapsed(lap.number);
+          expect(elapsed).toHaveLength(session.grid.points);
+          expect(Math.abs(elapsed[0]), `lap ${lap.number} starts at ${elapsed[0]}`).toBeLessThan(
+            0.05,
+          );
+          for (let i = 1; i < elapsed.length; i++) {
+            expect(
+              elapsed[i],
+              `lap ${lap.number} goes backwards at node ${i}`,
+            ).toBeGreaterThanOrEqual(elapsed[i - 1] - 1e-4);
+          }
+          expect(
+            Math.abs(elapsed[elapsed.length - 1] - lap.lapTime),
+            `lap ${lap.number} elapsed end ${elapsed[elapsed.length - 1]} vs lapTime ${lap.lapTime}`,
+          ).toBeLessThan(0.3);
+        }
+      });
+
+      it('composes a finite cross-session delta from two sessions elapsed arrays', () => {
+        const other = openSession(new Uint8Array(readFileSync(sample.ldPath)), {
+          fileName: sample.name,
+          ...(ldxText ? { ldxText } : {}),
+        });
+        expect(other.meta.id).not.toBe(session.meta.id);
+
+        const complete = session.meta.laps.filter((l) => l.complete);
+        const delta = computeDelta(session.elapsed(complete[0].number), other.elapsed(complete[1].number));
+
+        expect(delta).toHaveLength(session.grid.points);
+        expect([...delta].every(Number.isFinite)).toBe(true);
+
+        const expectedEnd = complete[1].lapTime - complete[0].lapTime;
+        expect(
+          Math.abs(delta[delta.length - 1] - expectedEnd),
+          `cross-session delta end ${delta[delta.length - 1]}s vs lapTime difference ${expectedEnd}s`,
+        ).toBeLessThan(0.3);
+      });
+
+      // FIX 2: 94 of Monza's 186 channels used to come back as views over the
+      // whole 29,958,704-byte file. postMessage with transfer would have
+      // detached the file and killed every other channel in the session.
+      it('returns channels that own their buffers, so they are safe to transfer', () => {
+        for (const meta of session.meta.channels) {
+          const values = session.channel(meta.name);
+          expect(
+            values.buffer.byteLength,
+            `${meta.name} is a view over a ${values.buffer.byteLength}-byte buffer`,
+          ).toBe(values.byteLength);
+        }
+      });
+
+      // FIX 3: Knockhill's Car Pos Norm hits 1.3802 at sample 1, inside the
+      // opening partial lap. The running maximum latched on it, so the whole
+      // grid mapped into the 0.1 s between two basis nodes and Ground Speed
+      // came back spanning 0.00001 kph — a flat line, with no NaN and no flag.
+      //
+      // The metric is the value span, not the distinct-value count: pchip over
+      // a squeezed interval still emits 74 distinct floats, all within
+      // 0.00001 kph of each other. After the fix the same lap spans 101.5 kph.
+      //
+      // A partial lap legitimately leaves the uncovered part of the grid
+      // clamped flat (Knockhill's lap 0 covers only the last 73 m of 2020),
+      // which is why this asserts a span and not a shape.
+      it('does not collapse a lap into a flat line after a position spike', () => {
+        for (const lap of session.meta.laps) {
+          const speed = session.series(lap.number, 'Ground Speed');
+          const span = Math.max(...speed) - Math.min(...speed);
+          expect(span, `lap ${lap.number} Ground Speed spans only ${span} kph`).toBeGreaterThan(10);
+        }
+      });
+
+      // FIX 4: the geometric fallback fires on 2 of 34 Knockhill laps.
+      it('flags whether each lapTime came from the channel or from the geometry', () => {
+        for (const lap of session.meta.laps) {
+          expect(typeof lap.lapTimeApproximate).toBe('boolean');
+          if (!lap.lapTimeApproximate) continue;
+          expect(lap.lapTime).toBeCloseTo(lap.endTime - lap.startTime, 6);
+        }
+      });
 
       it('produces an end-to-end delta between the fastest and slowest laps consistent with their lap times', () => {
         const complete = session.meta.laps.filter((l) => l.complete);

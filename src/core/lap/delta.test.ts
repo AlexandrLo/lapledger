@@ -22,4 +22,20 @@ describe('computeDelta', () => {
       /same distance grid/,
     );
   });
+
+  // FIX 1: the parameter names are what an IDE tooltip shows, and the tooltip
+  // is what tells a caller these are elapsed()-derived arrays rather than the
+  // broken per-lap Lap Time series.
+  it('names elapsed time in its arity error, not lap time', () => {
+    expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).toThrow(/elapsed/i);
+    expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).not.toThrow(
+      /lap time/i,
+    );
+  });
+
+  it('declares its parameters as elapsed arrays', () => {
+    const source = computeDelta.toString();
+    expect(source).toContain('referenceElapsed');
+    expect(source).toContain('comparisonElapsed');
+  });
 });
