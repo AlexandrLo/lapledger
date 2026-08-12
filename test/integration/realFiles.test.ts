@@ -9,9 +9,14 @@ const samples = findSampleFiles();
 describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files', () => {
   for (const sample of samples) {
     describe(sample.name, () => {
+      const ldxText = sample.ldxPath ? readFileSync(sample.ldxPath, 'latin1') : undefined;
+      const ldx = ldxText ? parseLdx(ldxText) : undefined;
+      const hasSidecar = ldx !== undefined;
+      const hasEnoughBeacons = (ldx?.beaconTimes.length ?? 0) >= 2;
+
       const session = openSession(new Uint8Array(readFileSync(sample.ldPath)), {
         fileName: sample.name,
-        ...(sample.ldxPath ? { ldxText: readFileSync(sample.ldxPath, 'latin1') } : {}),
+        ...(ldxText ? { ldxText } : {}),
       });
 
       it('reads 186 channels with unique full names', () => {
@@ -75,12 +80,60 @@ describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files',
         }
       });
 
-      it('reads the track length from the .ldx', () => {
-        if (!sample.ldxPath) return;
-        expect(session.grid.approximate).toBe(false);
-        expect(session.meta.trackLength).toBeGreaterThan(1000);
-        expect(session.meta.trackLength).toBeLessThan(10000);
-      });
+      // A track length that is merely "in a plausible range" does not catch a
+      // scaling bug: multiplying the resolved length by 1.5 leaves lap times
+      // and deltas untouched (resampleToDistance/resampleElapsedTime both
+      // normalise by grid.length), so only the axis scale itself pins the bug
+      // down. Pin it exactly against the sidecar's own Venue Length.
+      it.skipIf(!hasSidecar)(
+        'resolves meta.trackLength and grid.length exactly to the .ldx Venue Length',
+        () => {
+          const declared = ldx!.trackLength!;
+          expect(declared).toBeGreaterThan(0);
+
+          expect(
+            Math.abs(session.meta.trackLength! - declared),
+            `meta.trackLength ${session.meta.trackLength} vs sidecar Venue Length ${declared}`,
+          ).toBeLessThan(1e-6);
+
+          expect(session.grid.approximate).toBe(false);
+          expect(
+            Math.abs(session.grid.length - declared),
+            `grid.length ${session.grid.length} vs sidecar Venue Length ${declared}`,
+          ).toBeLessThan(1e-6);
+
+          const expectedPoints = Math.ceil(session.grid.length / session.grid.step);
+          expect(
+            session.grid.points,
+            `grid.points ${session.grid.points} vs expected ceil(length / step) = ${expectedPoints}`,
+          ).toBe(expectedPoints);
+        },
+      );
+
+      // Independent cross-check: opening the same recording WITHOUT the
+      // sidecar forces trackLength to be estimated from the median despiked
+      // Lap Distance over complete laps — a completely different code path
+      // from reading the .ldx. The two agreeing is real evidence that the
+      // resolved length is correct, not just internally self-consistent.
+      it.skipIf(!hasSidecar)(
+        'estimates a track length from Lap Distance that agrees with the .ldx Venue Length',
+        () => {
+          const declared = ldx!.trackLength!;
+          const withoutLdx = openSession(new Uint8Array(readFileSync(sample.ldPath)), {
+            fileName: sample.name,
+          });
+
+          expect(withoutLdx.grid.approximate).toBe(true);
+          expect(withoutLdx.meta.trackLength).toBeUndefined();
+
+          const estimated = withoutLdx.grid.length;
+          const relativeError = Math.abs(estimated - declared) / declared;
+          expect(
+            relativeError,
+            `estimated grid.length ${estimated} vs sidecar Venue Length ${declared} (relative error ${relativeError})`,
+          ).toBeLessThan(0.01);
+        },
+      );
 
       it('resamples Ground Speed onto the grid with finite values', () => {
         const lap = session.meta.laps.find((l) => l.complete);
@@ -113,25 +166,24 @@ describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files',
       // between consecutive beacons are lap times measured by MoTeC, not by us,
       // making this the strongest end-to-end check available: our fastest
       // complete lap should agree with the smallest beacon gap.
-      it('agrees with the .ldx beacon gaps on the fastest lap time', () => {
-        if (!sample.ldxPath) return;
-        const ldx = parseLdx(readFileSync(sample.ldxPath, 'latin1'));
-        if (ldx.beaconTimes.length < 2) return;
+      it.skipIf(!hasSidecar || !hasEnoughBeacons)(
+        'agrees with the .ldx beacon gaps on the fastest lap time',
+        () => {
+          const gaps: number[] = [];
+          for (let i = 1; i < ldx!.beaconTimes.length; i++) {
+            gaps.push(ldx!.beaconTimes[i] - ldx!.beaconTimes[i - 1]);
+          }
+          const smallestGap = Math.min(...gaps);
 
-        const gaps: number[] = [];
-        for (let i = 1; i < ldx.beaconTimes.length; i++) {
-          gaps.push(ldx.beaconTimes[i] - ldx.beaconTimes[i - 1]);
-        }
-        const smallestGap = Math.min(...gaps);
+          const complete = session.meta.laps.filter((l) => l.complete);
+          const fastest = complete.reduce((best, lap) => (lap.lapTime < best.lapTime ? lap : best));
 
-        const complete = session.meta.laps.filter((l) => l.complete);
-        const fastest = complete.reduce((best, lap) => (lap.lapTime < best.lapTime ? lap : best));
-
-        expect(
-          Math.abs(fastest.lapTime - smallestGap),
-          `fastest lap time ${fastest.lapTime}s vs smallest beacon gap ${smallestGap}s`,
-        ).toBeLessThan(0.3);
-      });
+          expect(
+            Math.abs(fastest.lapTime - smallestGap),
+            `fastest lap time ${fastest.lapTime}s vs smallest beacon gap ${smallestGap}s`,
+          ).toBeLessThan(0.3);
+        },
+      );
 
       it('produces an end-to-end delta between the fastest and slowest laps consistent with their lap times', () => {
         const complete = session.meta.laps.filter((l) => l.complete);
