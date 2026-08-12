@@ -81,4 +81,35 @@ describe('sampling', () => {
     expect(sampleLinear(values, 10, 500)).toBe(30);
     expect(sampleStep(values, 10, 500)).toBe(30);
   });
+
+  it('handles floating-point rounding at reconstructed sample times for sampleStep', () => {
+    const testValues = Float32Array.from({ length: 200 }, (_, i) => i);
+    const frequencies = [1, 10, 30, 50];
+
+    for (const freq of frequencies) {
+      for (let i = 0; i < testValues.length; i++) {
+        const t = i / freq;
+        const result = sampleStep(testValues, freq, t);
+        expect(result).toBe(i);
+      }
+    }
+  });
+
+  it('handles floating-point rounding at reconstructed sample times for sampleLinear', () => {
+    const testValues = Float32Array.from({ length: 200 }, (_, i) => i);
+    const frequencies = [1, 10, 30, 50];
+
+    for (const freq of frequencies) {
+      for (let i = 0; i < testValues.length; i++) {
+        const t = i / freq;
+        const result = sampleLinear(testValues, freq, t);
+        expect(Math.abs(result - i)).toBeLessThan(1e-9);
+      }
+    }
+  });
+
+  it('maintains step-hold behavior after rounding fix', () => {
+    expect(sampleStep(values, 10, 0.19)).toBe(10);
+    expect(sampleStep(values, 10, 0.2)).toBe(20);
+  });
 });

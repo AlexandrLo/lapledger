@@ -74,11 +74,24 @@ export function pchipEval(
   return { value, index: i };
 }
 
+/**
+ * Sample times are reconstructed as `i / freq`, and multiplying back by `freq`
+ * can land a hair below the intended integer: `49 / 30 * 30` is
+ * 48.99999999999999, which floors to 48. Snap to the nearest integer when we
+ * are within a rounding error of it.
+ */
+const INDEX_EPSILON = 1e-9;
+
+function snapToSample(x: number): number {
+  const nearest = Math.round(x);
+  return Math.abs(x - nearest) < INDEX_EPSILON ? nearest : x;
+}
+
 /** Linear interpolation of a constant-rate channel at absolute time `t`. */
 export function sampleLinear(values: Float32Array, freq: number, t: number): number {
   const last = values.length - 1;
   if (last < 0) return NaN;
-  const x = t * freq;
+  const x = snapToSample(t * freq);
   if (x <= 0) return values[0];
   if (x >= last) return values[last];
   const i = Math.floor(x);
@@ -90,7 +103,7 @@ export function sampleLinear(values: Float32Array, freq: number, t: number): num
 export function sampleStep(values: Float32Array, freq: number, t: number): number {
   const last = values.length - 1;
   if (last < 0) return NaN;
-  const i = Math.floor(t * freq);
+  const i = Math.floor(snapToSample(t * freq));
   if (i <= 0) return values[0];
   if (i >= last) return values[last];
   return values[i];
