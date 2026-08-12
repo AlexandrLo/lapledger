@@ -395,14 +395,26 @@ axis labels only, not alignment.
 
 ### Time delta
 
-Taken from the `Lap Time` channel (seconds from lap start, 30 Hz), resampled
-through the same pipeline:
-
 ```
-delta(d) = t_cmp(d) − t_ref(d)
+delta(d) = elapsed_cmp(d) − elapsed_ref(d)
 ```
 
 No speed integration and no error accumulation.
+
+`elapsed(d)` comes from the **lap basis**, not from the `Lap Time` channel:
+the basis already carries absolute session time at every grid node, so
+`elapsed(d) = t(d) − t(0)`. It is monotone by construction.
+
+**Correction, measured during implementation.** The original plan read
+`elapsed` from the `Lap Time` channel. Resampling that channel produces a
+broken series on 5 of 14 complete Monza laps and 13 of 33 complete Knockhill
+laps — Monza lap 4 ends at 17.08 s instead of 119.72 s and steps backwards by
+33.9 s mid-lap; Knockhill lap 7 starts at 53.97 s. The channel does not reset
+in step with the position wrap. The basis span, by contrast, tracks the lap
+index's own lap time on every lap (121.800 against 121.996, 119.600 against
+119.720, 53.800 against 53.967); the residual 0.1–0.2 s is the expected 10 Hz
+boundary quantisation. Reading the delta from the channel would have made the
+tool's primary feature wrong on roughly a third of laps.
 
 ## 5. Track map
 
