@@ -3,7 +3,12 @@ import { buildLd, type FixtureChannel } from '../../test/fixtures/buildLd';
 import { computeDelta } from './lap/delta';
 import { openSession } from './session';
 
-/** Two complete laps plus partial ends, 10 Hz, 1000 m per lap at 10 m/s. */
+/**
+ * Two complete laps plus partial ends, 10 Hz, 1000 m per lap. Ground Speed
+ * ramps from 200 to 497 kph across each lap (well above the despiker's
+ * plausibility floor) so tests can assert on the shape of a resampled
+ * series instead of just its finiteness.
+ */
 function sampleBytes(extra: FixtureChannel[] = []): Uint8Array {
   const pos: number[] = [];
   const lapNumber: number[] = [];
@@ -21,7 +26,7 @@ function sampleBytes(extra: FixtureChannel[] = []): Uint8Array {
       lapTime.push((i - from) / 10);
       travelled += 10;
       distance.push(travelled);
-      speed.push(360);
+      speed.push(200 + i * 3);
     }
   }
 
@@ -81,9 +86,18 @@ describe('openSession', () => {
     expect(session.grid.length).toBeCloseTo(1000, 0);
   });
 
-  it('caches decoded channels', () => {
+  // FIX A: channel() used to hand out the session's own cached array, so
+  // transferring one to a worker detached the session's copy too.
+  it('returns a fresh array from channel() on every call', () => {
     const session = openSession(sampleBytes());
-    expect(session.channel('Car Pos Norm')).toBe(session.channel('Car Pos Norm'));
+    const first = session.channel('Car Pos Norm');
+    const second = session.channel('Car Pos Norm');
+
+    expect(first).not.toBe(second);
+    expect([...first]).toEqual([...second]);
+
+    first[0] = -999;
+    expect(second[0]).not.toBe(-999);
   });
 
   it('reports an unknown channel by name', () => {
@@ -97,6 +111,41 @@ describe('openSession', () => {
 
     expect(series).toHaveLength(session.grid.points);
     expect([...series].every(Number.isFinite)).toBe(true);
+    // The fixture ramps Ground Speed from slow to fast over the lap, so the
+    // resampled series should rise from start to middle to end.
+    const mid = Math.floor(series.length / 2);
+    expect(series[0]).toBeLessThan(series[mid]);
+    expect(series[mid]).toBeLessThan(series[series.length - 1]);
+  });
+
+  // FIX A: series() used to hand out the session's own cached resampled
+  // array, so transferring one to a worker detached the session's copy too.
+  it('returns a fresh array from series() on every call', () => {
+    const session = openSession(sampleBytes());
+    const first = session.series(1, 'Ground Speed');
+    const second = session.series(1, 'Ground Speed');
+
+    expect(first).not.toBe(second);
+    expect([...first]).toEqual([...second]);
+
+    first[0] = -999;
+    expect(second[0]).not.toBe(-999);
+  });
+
+  // FIX A: writing into a channel array must not corrupt a later series()
+  // built from the same underlying channel, because the private helper that
+  // feeds the resampler used to hand out the identical cached array. The
+  // mutation happens BEFORE the first series() request for this lap, so a
+  // pre-existing series cache cannot hide the corruption.
+  it('does not let a mutated channel() array corrupt a later series()', () => {
+    const session = openSession(sampleBytes());
+
+    const speed = session.channel('Ground Speed');
+    speed.fill(-1);
+
+    const series = session.series(1, 'Ground Speed');
+    expect([...series].every((v) => v !== -1)).toBe(true);
+    expect(series[0]).toBeGreaterThan(0);
   });
 
   it('gives a zero delta for a lap against itself', () => {
@@ -136,9 +185,20 @@ describe('openSession', () => {
     }
   });
 
-  it('caches elapsed per lap', () => {
+  // FIX A: elapsed() used to hand out the session's own cached array, so
+  // transferring one to a worker detached the session's copy too — and the
+  // follow-on delta() call would then fail with a misleading grid-mismatch
+  // error instead of a clear "this array was transferred" signal.
+  it('returns a fresh array from elapsed() on every call', () => {
     const session = openSession(sampleBytes());
-    expect(session.elapsed(1)).toBe(session.elapsed(1));
+    const first = session.elapsed(1);
+    const second = session.elapsed(1);
+
+    expect(first).not.toBe(second);
+    expect([...first]).toEqual([...second]);
+
+    first[0] = -999;
+    expect(second[0]).not.toBe(-999);
   });
 
   it('refuses to compute elapsed for an unknown lap', () => {
@@ -153,6 +213,33 @@ describe('openSession', () => {
     const delta = computeDelta(reference.elapsed(1), comparison.elapsed(2));
     expect(delta).toHaveLength(reference.grid.points);
     expect([...delta].every(Number.isFinite)).toBe(true);
+  });
+
+  // FIX A: transferring an accessor's returned array (the plan-2 worker
+  // protocol's whole point) must not damage the session's own copy, and a
+  // later delta() built from a transferred elapsed() must still work rather
+  // than throwing a misleading grid-mismatch error.
+  it('keeps serving channel(), series() and elapsed() correctly after a caller detaches the returned buffer', () => {
+    const session = openSession(sampleBytes());
+
+    const channelCopy = session.channel('Ground Speed');
+    structuredClone(channelCopy.buffer, { transfer: [channelCopy.buffer] });
+    expect(channelCopy.byteLength).toBe(0);
+    expect(session.channel('Ground Speed').length).toBeGreaterThan(0);
+
+    const seriesCopy = session.series(1, 'Ground Speed');
+    structuredClone(seriesCopy.buffer, { transfer: [seriesCopy.buffer] });
+    expect(seriesCopy.byteLength).toBe(0);
+    expect(session.series(1, 'Ground Speed')).toHaveLength(session.grid.points);
+
+    const elapsedCopy = session.elapsed(1);
+    structuredClone(elapsedCopy.buffer, { transfer: [elapsedCopy.buffer] });
+    expect(elapsedCopy.byteLength).toBe(0);
+    expect(session.elapsed(1)).toHaveLength(session.grid.points);
+
+    // The follow-on failure this fix removes: delta() must still work after
+    // its elapsed() input was transferred away by the caller.
+    expect(() => session.delta(1, 2)).not.toThrow();
   });
 
   // FIX 2: the aligned decode path used to hand out a Float32Array view over

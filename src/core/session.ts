@@ -46,17 +46,19 @@ export type Session = {
   /**
    * The whole channel at its own sample rate, decoded to physical units.
    *
-   * The returned array owns its buffer: it is neither a view over the file nor
-   * shared with any other channel, so it is safe to hand to
-   * `postMessage(values, [values.buffer])` and safe to write into. The copy is
-   * made once per channel and cached, so repeated calls return the same array
-   * — transfer it and this session can no longer serve it.
+   * Each call returns a fresh array: it owns its buffer, is not shared with
+   * any other channel or with any previous call's result, and is safe to
+   * write into or to hand to `postMessage(values, [values.buffer])`. The
+   * decode is cached internally, so repeated calls are cheap, but the caller
+   * owns whatever array it gets back and may transfer or mutate it freely
+   * without affecting the session or any other caller.
    */
   channel(name: string): Float32Array;
   /**
    * One channel resampled onto `grid` for one lap.
    *
-   * Throws for `Lap Time`: see `elapsed`.
+   * Throws for `Lap Time`: see `elapsed`. Each call returns a fresh array —
+   * see `channel` for what that guarantees.
    */
   series(lapNumber: number, channelName: string): Float32Array;
   /**
@@ -66,7 +68,8 @@ export type Session = {
    * derived from the lap's position basis rather than from the `Lap Time`
    * channel. This is the array to feed `computeDelta` — including for a
    * cross-session comparison, where the two laps come from different `Session`
-   * objects that share a grid.
+   * objects that share a grid. Each call returns a fresh array — see
+   * `channel` for what that guarantees.
    */
   elapsed(lapNumber: number): Float32Array;
   /** Shorthand for `computeDelta(elapsed(referenceLap), elapsed(comparisonLap))`. */
@@ -199,9 +202,13 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
   return {
     meta,
     grid,
-    channel,
-    series: lapSeries,
-    elapsed,
+    // Public accessors copy on every call so a caller can transfer or mutate
+    // the result freely; internal consumers (the `series` helper above,
+    // `lapBasis`, `lapSeries` itself, and `delta` below) read the cached
+    // arrays directly through the closures and never pay for the copy.
+    channel: (name) => channel(name).slice(),
+    series: (lapNumber, channelName) => lapSeries(lapNumber, channelName).slice(),
+    elapsed: (lapNumber) => elapsed(lapNumber).slice(),
     delta: (referenceLap, comparisonLap) => computeDelta(elapsed(referenceLap), elapsed(comparisonLap)),
   };
 }

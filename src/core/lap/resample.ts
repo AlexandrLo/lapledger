@@ -90,14 +90,14 @@ export function buildLapBasis(carPosNorm: ChannelSeries, lap: LapMeta): LapBasis
  * Both resamplers below share this so they cannot drift apart on what a lap's
  * extent is: if they disagreed, a channel series and its elapsed time would
  * describe different laps, and neither function's own tests would notice.
- * Returns false for an empty basis, leaving the caller's output all zeros.
+ * Does nothing for an empty basis, leaving the caller's output all zeros.
  */
 function walkGrid(
   basis: LapBasis,
   grid: DistanceGrid,
   emit: (node: number, time: number) => void,
-): boolean {
-  if (basis.u.length === 0) return false;
+): void {
+  if (basis.u.length === 0) return;
 
   const first = basis.u[0];
   const last = basis.u[basis.u.length - 1];
@@ -113,8 +113,6 @@ function walkGrid(
     hint = evaluated.index;
     emit(i, evaluated.value);
   }
-
-  return true;
 }
 
 export function resampleToDistance(

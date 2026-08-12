@@ -32,10 +32,4 @@ describe('computeDelta', () => {
       /lap time/i,
     );
   });
-
-  it('declares its parameters as elapsed arrays', () => {
-    const source = computeDelta.toString();
-    expect(source).toContain('referenceElapsed');
-    expect(source).toContain('comparisonElapsed');
-  });
 });
