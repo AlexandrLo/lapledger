@@ -109,6 +109,61 @@ describe('resampleToDistance', () => {
     }
   });
 
+  // FIX 3: Knockhill's Car Pos Norm reaches 1.3802 at sample 1. The running
+  // maximum latched on it, the first segment's basis became a 58-sample
+  // plateau, and the resampled series was constant across 1946 m of a 2020 m
+  // grid — flat charts and a flat delta with no NaN and no flag.
+  it('ignores an out-of-range Car Pos Norm spike instead of latching on it', () => {
+    const { channels, lap } = oneLap();
+    channels.carPosNorm.values[1] = 1.3802;
+    channels.carPosNorm.values[4] = 1.2389;
+
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+
+    expect(Math.max(...basis.u)).toBeLessThan(1.001);
+    expect(basis.u[basis.u.length - 1]).toBeGreaterThan(0.9);
+    for (let i = 1; i < basis.u.length; i++) {
+      expect(basis.u[i]).toBeGreaterThanOrEqual(basis.u[i - 1]);
+    }
+  });
+
+  it('does not flatten the series into a plateau after a spike', () => {
+    const { channels, lap } = oneLap();
+    channels.carPosNorm.values[1] = 1.3802;
+
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    const grid = makeDistanceGrid(1000);
+    const out = resampleToDistance(channels.lapTime, basis, grid, false);
+
+    // A latched spike squeezes the whole grid into the 0.1 s between the two
+    // surviving basis nodes, so the lap's 9.9 s of Lap Time collapse to ~0.
+    const span = Math.max(...out) - Math.min(...out);
+    expect(span).toBeGreaterThan(8);
+  });
+
+  it('accepts the legitimate 1.0008 sample real files carry at a lap end', () => {
+    const { channels, lap } = oneLap();
+    channels.carPosNorm.values[99] = 1.0008;
+
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    expect(basis.u.length).toBe(lap.endIndex - lap.startIndex + 1);
+    expect(basis.u[basis.u.length - 1]).toBeCloseTo(1.0008, 4);
+  });
+
+  it('yields an empty basis when fewer than two samples survive the range check', () => {
+    const { channels, lap } = oneLap();
+    for (let i = lap.startIndex; i <= lap.endIndex; i++) {
+      channels.carPosNorm.values[i] = 5;
+    }
+
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    expect(basis.u).toHaveLength(0);
+
+    const grid = makeDistanceGrid(1000);
+    const out = resampleToDistance(channels.lapTime, basis, grid, false);
+    expect([...out].every((v) => v === 0)).toBe(true);
+  });
+
   it('handles non-zero startIndex correctly (boundary bug regression)', () => {
     const { channels, lap2 } = twoLaps();
     const basis = buildLapBasis(channels.carPosNorm, lap2);
