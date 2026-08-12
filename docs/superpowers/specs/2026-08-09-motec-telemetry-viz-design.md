@@ -135,6 +135,21 @@ constant.
 **Decision: lap boundaries come from the `Car Pos Norm` wrap; the lap number
 comes from `Lap Number`.**
 
+**Correction, measured during implementation.** The disagreement is not bounded
+by one sample. On the Knockhill recording there are 34 position wraps but only
+33 `Lap Number` transitions: the counter stays at 0 for the whole first flying
+lap, so labelling laps by that channel gives two different laps the number 0.
+A lap's identity therefore cannot come from the sim at all — the lap index
+assigns its own unique zero-based `number` and keeps the sim's value alongside
+it as `sourceNumber`, for display only.
+
+The same recording shows the `Lap Time` channel failing to reset at the wrap on
+two laps out of 34, leaving the window maximum carrying the previous lap's tail
+— 5.9 s and 0.8 s too long, on laps that otherwise looked complete and valid.
+`lapTime` is therefore taken from the channel only when it agrees with the
+lap's own geometric duration to within 0.25 s, and falls back to that duration
+otherwise.
+
 ### 2.5 Basis for lap comparison
 
 Two candidates, and the choice is substantive rather than a matter of taste:
@@ -339,7 +354,8 @@ type ChannelMeta = {
 }
 
 type LapMeta = {
-  number: number
+  number: number      // unique zero-based index within the session — the identity
+  sourceNumber: number // the sim's own Lap Number; NOT unique, display only
   startTime: number   // seconds from session start
   endTime: number
   lapTime: number     // seconds

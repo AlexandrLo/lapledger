@@ -1619,6 +1619,28 @@ collapses a lap to a constant.
 `endTime - startTime`: the channel carries millisecond precision while the wrap
 boundary only resolves to 100 ms.
 
+> **Corrections applied during implementation** (see git history for the final
+> code). Validating against the real recordings broke three assumptions in the
+> code below:
+>
+> 1. `LapMeta.number` is now a unique zero-based index over the returned
+>    segments, and the sim's `Lap Number` value moved to a new `sourceNumber`
+>    field, documented as non-unique and display-only. On Knockhill there are 34
+>    position wraps but only 33 counter transitions — the counter stays at 0 for
+>    the whole first flying lap — so labelling by the sim gave two laps the
+>    number 0 and broke `LapRef` identity.
+> 2. `windowBounds` is half-open `[startTime, endTime)` for both callers.
+>    Previously only `flagSetInWindow` subtracted 1, so `maxInWindow` could read
+>    a sample belonging to the next lap.
+> 3. `lapTime` takes the channel maximum only when it agrees with
+>    `endTime - startTime` to within 0.25 s, and falls back to that duration
+>    otherwise. On two Knockhill laps the `Lap Time` channel fails to reset at
+>    the wrap, and the maximum carried the previous lap's tail — 5.9 s and 0.8 s
+>    too long, on laps reported complete and valid.
+>
+> The dead `if (wraps[0] > 0)` guard was also dropped: wrap detection starts at
+> index 1, so `wraps[0]` is always at least 1.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `src/core/lap/lapIndex.test.ts`:
