@@ -74,10 +74,18 @@ export function despikeDistance(distance: ChannelSeries, speedKph: ChannelSeries
   }
 
   // A spike also corrupts the step into the following sample, so drop its
-  // neighbour. Read from a snapshot: mutating `good` in place would cascade,
-  // and a single spike would condemn the entire rest of the series.
-  // Only cascade if the bad sample is isolated (previous sample is good),
-  // not for runs of bad samples which indicate genuine resets.
+  // neighbour — but only when the bad sample is isolated (previous sample is
+  // good); runs of bad samples indicate genuine resets and must not cascade,
+  // since a cascaded sample's own predecessor is already bad, which blocks
+  // further propagation on its own and keeps this self-limiting.
+  //
+  // Decide from a snapshot, not from `good` itself: this loop's decisions
+  // must reflect the ORIGINAL rejection pass, not flags that earlier steps
+  // of this same loop have already changed, otherwise the result would
+  // depend on iteration order rather than on the data. This matters for
+  // adjacent isolated-bad samples (bad, good, bad): reading live would let
+  // the first cascade's write suppress the second cascade's trigger, eating
+  // fewer samples than the snapshot does.
   const firstPass = good.slice();
   for (let i = 1; i < n - 1; i++) {
     if (firstPass[i] === 0 && firstPass[i - 1] === 1) {

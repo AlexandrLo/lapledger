@@ -123,6 +123,50 @@ describe('despikeDistance', () => {
     expect(out[179]).toBeCloseTo(distance[179], 1);
   });
 
+  it('pins the cascade cluster semantics for two nearby isolated bad samples', () => {
+    // Two isolated bad samples close together (bad, good, bad), not a run of
+    // adjacent bad raw values. The step check flags 50 and 52 independently:
+    // both are backward jumps beyond MAX_BACKWARD, while 51 and 53 land close
+    // enough to their (corrupt) predecessor to look plausible on their own.
+    //
+    // The neighbour-drop cascade (fed from a `firstPass` snapshot) sees the
+    // ORIGINAL rejection at 51 and 53 (both good) and, because 50 and 52 are
+    // each isolated bad samples, drops both of their neighbours: 51 and 53
+    // are cascaded to bad too. That leaves one gap spanning 49..54 with
+    // anchors only at 49 and 54, filled by interpolating across the whole
+    // span. A live-read variant would instead let the cascade's own write to
+    // 51 suppress the second trigger at 52 (since it reads good[51] after it
+    // has already been zeroed), leaving 53 as a surviving anchor and
+    // producing different — and differently spanned — interpolated values.
+    // This test was verified to fail under the live-read variant (see the
+    // fix-2 report for the recorded output of both variants).
+    const n = 60;
+    const distance = new Float32Array(n);
+    const speed = new Float32Array(n);
+    for (let i = 0; i < n; i++) speed[i] = 36;
+    for (let i = 0; i <= 49; i++) distance[i] = i;
+    distance[50] = 47; // step 49->50 = -2, beyond MAX_BACKWARD: bad, isolated
+    distance[51] = 47.2; // step 50->51 = 0.2: looks plausible on its own
+    distance[52] = 45; // step 51->52 = -2.2, beyond MAX_BACKWARD: bad, isolated
+    distance[53] = 45.3; // step 52->53 = 0.3: looks plausible on its own
+    for (let i = 54; i < n; i++) distance[i] = 45.5 + 0.2 * (i - 54);
+
+    const out = despikeDistance({ values: distance, freq: 10 }, { values: speed, freq: 10 });
+
+    // Anchors, untouched.
+    expect(out[48]).toBeCloseTo(48, 3);
+    expect(out[49]).toBeCloseTo(49, 3);
+    expect(out[54]).toBeCloseTo(45.5, 3);
+    expect(out[55]).toBeCloseTo(45.7, 3);
+
+    // The whole 49..54 span is cascaded to bad and linearly interpolated
+    // between the two surviving anchors (49 -> 49, 54 -> 45.5).
+    expect(out[50]).toBeCloseTo(48.3, 3);
+    expect(out[51]).toBeCloseTo(47.6, 3);
+    expect(out[52]).toBeCloseTo(46.9, 3);
+    expect(out[53]).toBeCloseTo(46.2, 3);
+  });
+
   it('still interpolates an isolated spike inside plausible data', () => {
     const { distance, speed } = clean();
     // Put a spike at index 40
