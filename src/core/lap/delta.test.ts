@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest';
+import { computeDelta } from './delta';
+
+describe('computeDelta', () => {
+  it('is zero for a lap against itself', () => {
+    const lap = Float32Array.from([0, 1, 2, 3.5, 7]);
+    expect([...computeDelta(lap, lap)]).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it('is positive where the comparison lap is behind', () => {
+    const reference = Float32Array.from([0, 1, 2, 3]);
+    const comparison = Float32Array.from([0, 1.2, 2.1, 2.9]);
+
+    const delta = computeDelta(reference, comparison);
+    expect(delta[1]).toBeCloseTo(0.2, 5);
+    expect(delta[2]).toBeCloseTo(0.1, 5);
+    expect(delta[3]).toBeCloseTo(-0.1, 5);
+  });
+
+  it('rejects grids of different sizes', () => {
+    expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).toThrow(
+      /same distance grid/,
+    );
+  });
+});
