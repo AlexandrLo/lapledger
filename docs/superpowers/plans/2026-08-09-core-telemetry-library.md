@@ -2954,3 +2954,55 @@ Recorded here so nothing in the spec is silently dropped:
   `ByteWindow` already carries a `base` offset, so a window over a partial read
   behaves identically to one over the whole file; that is the seam plan 2 uses
   to introduce `ByteSource` in the worker without touching any parsing code.
+
+### Carried forward from the final review
+
+Measured, deliberately left undone, and load-bearing for what comes next:
+
+- **`basis: 'time'` has no core support** (spec §3). `getSeries` promises
+  `'distance' | 'time'` and the x-axis toggle (spec §7) needs the channel's
+  native samples inside the lap. Plan 2 can assemble it from `channel(name)`,
+  `lap.startTime`/`endTime` and `freq`, but then every consumer re-derives the
+  same window slice and the "what is a lap" invariant escapes `core`. A
+  `lapWindow(lapNumber, channelName)` helper would keep it in one place. Plan 2
+  hits this on day one.
+- **Partial-lap grid coverage is unflagged.** A partial lap returns a
+  full-length series of plausible-looking values, most of which are the clamp
+  constant. Knockhill's lap 0 covers 74 m of a 2019 m grid, so 1946 of 2020
+  adjacent nodes are identical — no NaN, no flag, only `complete: false`, which
+  says nothing about how much of the grid is real. A UI that plots every lap in
+  the table will draw a flat line as if it were data. Consider exposing the
+  basis coverage on `LapMeta`, or returning `NaN` outside the covered span so
+  charts break the line instead of drawing a lie.
+- **Cross-session `computeDelta` checks length, not grid identity.** Two
+  sessions on different tracks whose `grid.points` happen to match would
+  silently produce garbage. Low probability, zero detection.
+- **The `.ldx` beacon cross-check does not exist** (spec §6 says `openSession`
+  "cross-checks against .ldx beacons when present"). `parseLdx` returns
+  `beaconTimes` and nothing in `src/core/` reads them; only the integration test
+  does, via a deep import. `parseLdx` is also not exported from the barrel.
+  When this is wired up, fix the related parser limitation first: `MARKER_RE`
+  matches only self-closing `<Marker …/>`, so a non-self-closing form yields no
+  error and no beacon — and a cross-check that silently found zero beacons
+  would pass.
+- **`(dtype_a = 0, dtype)` is still unconfirmed against MoTeC i2.** The values
+  look right — `Lap Invalidated` ∈ {0,1}, `Num Tires Off Track` ∈ {0..4} — but
+  `DRS Available` and `ERS Is Charging` are constant `1` across both entire
+  recordings, which is exactly what a misread would also produce. Do the
+  cross-check before any UI depends on flag channels.
+- **The data model has three homes and one concept has two names.**
+  `SessionMeta` lives in `session.ts`, `LapMeta` and `ChannelSeries` in
+  `lap/lapIndex.ts`, the rest in `types.ts`; `VehicleInfo` and
+  `LdxVehicleInfo` are structurally identical declarations of the same thing.
+  `LapMeta` also carries `startIndex`/`endIndex` — inclusive indices into one
+  specific channel's array, meaningless to a `SessionMeta` consumer and a leak
+  of resampler internals into what will become the wire format.
+- **The delta's terminal value is not the lap-time difference.** Worst measured
+  gap is 0.124 s, always in the final few metres where one lap's basis has run
+  out and clamping freezes it while the other still advances. Harmless for
+  "which corner", but a lap table must show `lapTime` differences, not
+  `delta[grid.points - 1]`, or the two panels will disagree by up to 0.12 s.
+- **`WRAP_THRESHOLD`'s real margin is 0.084, not 0.5.** Knockhill contains a
+  non-wrap backwards step of 0.41643. A test pins that a 0.42 drop is not a lap
+  boundary. Lowering the constant invents phantom laps, which renumber every
+  `LapMeta.number` and invalidate every persisted `LapRef`.
