@@ -35,6 +35,7 @@ describe('buildLapIndex', () => {
 
     expect(laps.map((l) => l.complete)).toEqual([false, true, true, false]);
     expect(laps.map((l) => l.number)).toEqual([0, 1, 2, 3]);
+    expect(laps.map((l) => l.sourceNumber)).toEqual([0, 1, 2, 3]);
   });
 
   it('takes boundaries from Car Pos Norm wraps', () => {
@@ -80,5 +81,40 @@ describe('buildLapIndex', () => {
 
     expect(laps).toHaveLength(1);
     expect(laps[0].complete).toBe(false);
+  });
+
+  it('assigns unique sequential numbers even when Lap Number channel repeats', () => {
+    const channels = synthetic();
+    // Lap Number stays at 0 through the first wrap; a second wrap happens.
+    channels.lapNumber.values[10] = 0;
+
+    const laps = buildLapIndex(channels);
+    expect(laps.map((l) => l.number)).toEqual([0, 1, 2, 3]);
+    expect(laps.map((l) => l.sourceNumber)).toEqual([0, 0, 2, 3]);
+  });
+
+  it('sourceNumber carries the sim value in normal recordings', () => {
+    const laps = buildLapIndex(synthetic());
+    expect(laps.map((l) => l.sourceNumber)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('falls back to geometric duration when Lap Time channel disagrees', () => {
+    const channels = synthetic();
+    // Inject a false lap time value that is 5 seconds larger than the real lap.
+    channels.lapTime.values[10] = 5.9;
+
+    const laps = buildLapIndex(channels);
+    const lap1Duration = laps[1].endTime - laps[1].startTime;
+    expect(laps[1].lapTime).toBeCloseTo(lap1Duration, 6);
+  });
+
+  it('still takes lapTime from the channel when the two agree', () => {
+    const channels = synthetic();
+    const laps = buildLapIndex(channels);
+    // For the synthetic fixture, the lap duration is 1.0 s (from 0.5 to 1.5)
+    // and the max Lap Time is 0.9.
+    const lap1Duration = laps[1].endTime - laps[1].startTime;
+    expect(laps[1].lapTime).toBeCloseTo(0.9, 6);
+    expect(Math.abs(laps[1].lapTime - lap1Duration)).toBeGreaterThan(0.1);
   });
 });
