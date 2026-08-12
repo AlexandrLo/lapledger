@@ -117,4 +117,37 @@ describe('buildLapIndex', () => {
     expect(laps[1].lapTime).toBeCloseTo(0.9, 6);
     expect(Math.abs(laps[1].lapTime - lap1Duration)).toBeGreaterThan(0.1);
   });
+
+  // FIX 4: the fallback fires on 2 of 34 real Knockhill laps and swaps
+  // millisecond precision for the wrap grid's ~100 ms. A consumer has to be
+  // able to tell which laps deserve to be rendered as 1:59.874.
+  it('reports lapTimeApproximate false when the channel value is credible', () => {
+    const laps = buildLapIndex(synthetic());
+    expect(laps[1].lapTimeApproximate).toBe(false);
+  });
+
+  it('reports lapTimeApproximate true when the channel disagrees and geometry wins', () => {
+    const channels = synthetic();
+    channels.lapTime.values[10] = 5.9;
+
+    const laps = buildLapIndex(channels);
+    expect(laps[1].lapTimeApproximate).toBe(true);
+    expect(laps[1].lapTime).toBeCloseTo(laps[1].endTime - laps[1].startTime, 6);
+  });
+
+  // FIX 7: Knockhill contains a NON-wrap backwards step of 0.41643 between
+  // samples 1 and 2. The threshold's real margin is 0.084, not 0.5; lowering it
+  // to chase a missed wrap would invent phantom laps and renumber every
+  // LapMeta.number, invalidating every persisted LapRef.
+  it('does not read a 0.42 backwards step as a lap boundary', () => {
+    const channels = synthetic();
+    // Inside lap 2 (indices 15..24), drop back by 0.42 — bigger than any noise
+    // but smaller than a wrap. Lap 2 starts at 0.0, so lift it first.
+    channels.carPosNorm.values[17] = 0.85;
+    channels.carPosNorm.values[18] = 0.85 - 0.42;
+
+    const laps = buildLapIndex(channels);
+    expect(laps).toHaveLength(4);
+    expect(laps.map((l) => l.startIndex)).toEqual([0, 5, 15, 25]);
+  });
 });

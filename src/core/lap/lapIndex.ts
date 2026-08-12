@@ -21,6 +21,14 @@ export type LapMeta = {
   startTime: number;
   endTime: number;
   lapTime: number;
+  /**
+   * True when `lapTime` is the wrap-to-wrap geometric duration rather than the
+   * recorded Lap Time channel, because the two disagreed beyond tolerance. It
+   * is then only as precise as the position channel's sample interval — about
+   * 100 ms at 10 Hz — so it must not be rendered as `1:59.874`. Fires on 2 of
+   * the 34 laps in the Knockhill recording.
+   */
+  lapTimeApproximate: boolean;
   valid: boolean;
   complete: boolean;
   /** Inclusive indices into carPosNorm. */
@@ -28,7 +36,15 @@ export type LapMeta = {
   endIndex: number;
 };
 
-/** A drop larger than this in Car Pos Norm is a lap boundary, not noise. */
+/**
+ * A drop larger than this in Car Pos Norm is a lap boundary, not noise.
+ *
+ * The headroom is far smaller than the value suggests: the Knockhill recording
+ * contains a NON-wrap backwards step of 0.41643 (sample 1 to 2) and another of
+ * 0.2751, so the real margin is 0.084, not 0.5. Lowering this — the plausible
+ * future edit, chasing a missed wrap on some new track — invents phantom laps,
+ * which renumbers every LapMeta.number and invalidates every persisted LapRef.
+ */
 const WRAP_THRESHOLD = 0.5;
 
 /**
@@ -69,14 +85,15 @@ export function buildLapIndex(channels: LapChannels): LapMeta[] {
 
     const spanned = endTime - startTime;
     const fromChannel = maxInWindow(channels.lapTime, startTime, endTime);
-    const lapTime = Math.abs(fromChannel - spanned) <= LAP_TIME_TOLERANCE ? fromChannel : spanned;
+    const channelIsCredible = Math.abs(fromChannel - spanned) <= LAP_TIME_TOLERANCE;
 
     return {
       number: segmentIndex,
       sourceNumber: Math.round(sampleStep(channels.lapNumber.values, channels.lapNumber.freq, midTime)),
       startTime,
       endTime,
-      lapTime,
+      lapTime: channelIsCredible ? fromChannel : spanned,
+      lapTimeApproximate: !channelIsCredible,
       valid: complete ? !flagSetInWindow(channels.lapInvalidated, startTime, endTime) : false,
       complete,
       startIndex: start,
