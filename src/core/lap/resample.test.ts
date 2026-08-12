@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildLapIndex } from './lapIndex';
-import { buildLapBasis, makeDistanceGrid, resampleToDistance } from './resample';
+import { buildLapBasis, makeDistanceGrid, resampleElapsedTime, resampleToDistance } from './resample';
 
 /** One clean lap: 100 samples at 10 Hz sweeping Car Pos Norm from 0 to 0.99. */
 function oneLap() {
@@ -19,6 +19,25 @@ function oneLap() {
   };
   const laps = buildLapIndex(channels);
   return { channels, lap: laps[0] };
+}
+
+/** Two clean laps: 100 samples per lap at 10 Hz, second lap tests boundary conditions. */
+function twoLaps() {
+  const pos = new Float32Array(200);
+  const lapNumber = new Float32Array(200);
+  const lapTime = new Float32Array(200);
+  for (let i = 0; i < 200; i++) {
+    pos[i] = (i % 100) / 100;
+    lapNumber[i] = Math.floor(i / 100);
+    lapTime[i] = (i % 100) / 10;
+  }
+  const channels = {
+    carPosNorm: { values: pos, freq: 10 },
+    lapNumber: { values: lapNumber, freq: 10 },
+    lapTime: { values: lapTime, freq: 10 },
+  };
+  const laps = buildLapIndex(channels);
+  return { channels, lap1: laps[0], lap2: laps[1] };
 }
 
 describe('makeDistanceGrid', () => {
@@ -88,5 +107,76 @@ describe('resampleToDistance', () => {
     for (let i = 1; i < basis.u.length; i++) {
       expect(basis.u[i]).toBeGreaterThanOrEqual(basis.u[i - 1]);
     }
+  });
+
+  it('handles non-zero startIndex correctly (boundary bug regression)', () => {
+    const { channels, lap2 } = twoLaps();
+    const basis = buildLapBasis(channels.carPosNorm, lap2);
+    const grid = makeDistanceGrid(1000);
+
+    // Second lap should start near 0, not be flattened
+    expect(basis.u[0]).toBeLessThan(0.15);
+    expect(basis.u[basis.u.length - 1]).toBeGreaterThan(0.8);
+
+    // Resampled values should span a wide range, not collapse to a constant
+    const out = resampleToDistance(channels.carPosNorm, basis, grid, false);
+    const min = Math.min(...out);
+    const max = Math.max(...out);
+    expect(max - min).toBeGreaterThan(0.7);
+  });
+});
+
+describe('resampleElapsedTime', () => {
+  it('produces one value per grid node', () => {
+    const { channels, lap } = oneLap();
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    const grid = makeDistanceGrid(1000);
+
+    const out = resampleElapsedTime(basis, grid);
+    expect(out).toHaveLength(grid.points);
+    expect([...out].every(Number.isFinite)).toBe(true);
+  });
+
+  it('starts at zero and is non-decreasing', () => {
+    const { channels, lap } = oneLap();
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    const grid = makeDistanceGrid(1000);
+
+    const out = resampleElapsedTime(basis, grid);
+    expect(out[0]).toBeCloseTo(0, 5);
+    for (let i = 1; i < out.length; i++) {
+      expect(out[i]).toBeGreaterThanOrEqual(out[i - 1] - 1e-5);
+    }
+  });
+
+  it('recovers elapsed time proportional to distance at constant speed', () => {
+    const { channels, lap } = oneLap();
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    const grid = makeDistanceGrid(1000);
+
+    const out = resampleElapsedTime(basis, grid);
+    // At constant speed over 0.99 position in 10 seconds:
+    // elapsed time ≈ distance / 1000 * 10 / 0.99
+    const expectedAt500 = (500 / 1000) * (10 / 0.99);
+    expect(out[500]).toBeCloseTo(expectedAt500, 0);
+  });
+
+  it('final element is close to lap duration', () => {
+    const { channels, lap } = oneLap();
+    const basis = buildLapBasis(channels.carPosNorm, lap);
+    const grid = makeDistanceGrid(1000);
+
+    const out = resampleElapsedTime(basis, grid);
+    const expectedDuration = basis.t[basis.t.length - 1] - basis.t[0];
+    expect(out[out.length - 1]).toBeCloseTo(expectedDuration, 1);
+  });
+
+  it('handles empty basis by returning zeros', () => {
+    const emptyBasis = { u: new Float64Array(0), t: new Float64Array(0), slopes: new Float64Array(0) };
+    const grid = makeDistanceGrid(100);
+
+    const out = resampleElapsedTime(emptyBasis, grid);
+    expect(out).toHaveLength(grid.points);
+    expect([...out].every(v => v === 0)).toBe(true);
   });
 });

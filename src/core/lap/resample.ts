@@ -80,3 +80,34 @@ export function resampleToDistance(
 
   return out;
 }
+
+/**
+ * Elapsed time within the lap at each grid node, in seconds.
+ *
+ * Derived from the lap basis rather than from the `Lap Time` channel: on the
+ * real recordings that channel fails to reset in step with the position wrap
+ * on a third of laps, ending a lap at 17 s instead of 120 s or starting one at
+ * 54 s. The basis is monotone by construction, so this is too.
+ */
+export function resampleElapsedTime(basis: LapBasis, grid: DistanceGrid): Float32Array {
+  const out = new Float32Array(grid.points);
+  if (basis.u.length === 0) return out;
+
+  const first = basis.u[0];
+  const last = basis.u[basis.u.length - 1];
+  const t0 = basis.t[0];
+
+  let hint = 0;
+  for (let i = 0; i < grid.points; i++) {
+    const distance = i * grid.step;
+    let position = distance / grid.length;
+    if (position < first) position = first;
+    else if (position > last) position = last;
+
+    const evaluated = pchipEval(basis.u, basis.t, basis.slopes, position, hint);
+    hint = evaluated.index;
+    out[i] = evaluated.value - t0;
+  }
+
+  return out;
+}
