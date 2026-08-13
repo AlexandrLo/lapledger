@@ -554,13 +554,16 @@ No other assertion needs touching: `expect(session.meta.driver.length).toBeGreat
 
 The `it.skipIf(!hasSidecar)` and `it.skipIf(!hasSidecar || !hasEnoughBeacons)` guards inside the loop stay: they describe a property of an individual recording, not the absence of fixtures. With this fixture both are satisfied, so those tests execute.
 
-- [ ] **Step 5: Run it and watch it fail**
+- [ ] **Step 5: Run it and watch it fail for the right reason**
+
+`samples.ts` still scans `temp/example`, so the new test would pass on data the suite is about to stop using. Move that data aside first, so the red proves what it is supposed to prove — that nothing committed satisfies the test yet:
 
 ```bash
+mv temp/example temp/example-holdout
 docker compose run --rm app pnpm test tests/integration/realFiles.test.ts
 ```
 
-Expected: FAIL — `samples.ts` still points at `temp/example` and exports `samplesAvailable`, so the file does not even compile. That is the failure being fixed in the next step.
+Expected: FAIL. Either `ships at least one committed sample recording` fails on an empty `samples` array, or the run errors because `SAMPLE_ROOT` no longer exists — both are the same missing fixture. Leave `temp/example-holdout` where it is; Step 7 runs against it too, and Step 8 restores it.
 
 - [ ] **Step 6: Repoint `tests/fixtures/samples.ts` at the committed fixture**
 
@@ -612,15 +615,16 @@ docker compose run --rm app pnpm test tests/integration/realFiles.test.ts
 
 Expected: PASS, with every test **executing** — no `skipped` count for the `real MoTeC files` describe block other than none at all. Confirm the reported test names include `resolves meta.trackLength and grid.length exactly to the .ldx Venue Length`, which only runs when the sidecar is present.
 
-- [ ] **Step 8: Prove the suite no longer depends on `temp/`**
+Note that `temp/example` is still moved aside at this point, so this pass is already proof that the suite runs off the committed fixture.
+
+- [ ] **Step 8: Run the whole suite, then restore the scratch data**
 
 ```bash
-mv temp/example temp/example-holdout
 docker compose run --rm app pnpm test
 mv temp/example-holdout temp/example
 ```
 
-Expected: PASS with `temp/example` absent. This is the check that the integration test is genuinely running off the committed fixture.
+Expected: PASS with `temp/example` still absent.
 
 - [ ] **Step 9: Delete the throwaway script and lint**
 
@@ -745,6 +749,8 @@ Leave `tsconfig.node.json` on its own settings — it targets `module: nodenext`
   "include": ["vite.config.ts", "vitest.config.ts"]
 ```
 
+Under `module: nodenext` a relative import needs an explicit file extension, which is why Step 4 writes `'./vite.config.ts'` rather than `'./vite.config'` (`allowImportingTsExtensions` is already true in this project). If `tsc -b` rejects the import anyway, drop `vitest.config.ts` back out of this `include` — that restores today's behaviour, where the file is not type-checked at all — and note the fallback in the task report.
+
 - [ ] **Step 4: Teach Vite and Vitest the same aliases**
 
 Replace `vite.config.ts` with:
@@ -771,7 +777,7 @@ Replace `vitest.config.ts` with:
 
 ```ts
 import { defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config';
+import viteConfig from './vite.config.ts';
 
 export default mergeConfig(
   viteConfig,
