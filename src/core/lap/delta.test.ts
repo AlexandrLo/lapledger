@@ -28,8 +28,6 @@ describe('computeDelta', () => {
   // broken per-lap Lap Time series.
   it('names elapsed time in its arity error, not lap time', () => {
     expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).toThrow(/elapsed/i);
-    expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).not.toThrow(
-      /lap time/i,
-    );
+    expect(() => computeDelta(new Float32Array(3), new Float32Array(4))).not.toThrow(/lap time/i);
   });
 });

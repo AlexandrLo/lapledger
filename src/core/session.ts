@@ -168,7 +168,7 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
     if (channelName === LAP_TIME) {
       throw new Error(
         `"${LAP_TIME}" cannot be resampled per lap: the raw channel does not reset in step ` +
-          'with the lap\'s Car Pos Norm wrap, so on real recordings the resulting series is ' +
+          "with the lap's Car Pos Norm wrap, so on real recordings the resulting series is " +
           'non-monotone or ends at the wrong value on roughly a third of laps, and a delta ' +
           `built from two of them is wrong by tens of seconds. Use elapsed(${lapNumber}) ` +
           `instead, or channel("${LAP_TIME}") for the raw samples.`,
@@ -209,7 +209,8 @@ export function openSession(bytes: Uint8Array, options: OpenSessionOptions = {})
     channel: (name) => channel(name).slice(),
     series: (lapNumber, channelName) => lapSeries(lapNumber, channelName).slice(),
     elapsed: (lapNumber) => elapsed(lapNumber).slice(),
-    delta: (referenceLap, comparisonLap) => computeDelta(elapsed(referenceLap), elapsed(comparisonLap)),
+    delta: (referenceLap, comparisonLap) =>
+      computeDelta(elapsed(referenceLap), elapsed(comparisonLap)),
   };
 }
 

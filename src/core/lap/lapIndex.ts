@@ -89,7 +89,9 @@ export function buildLapIndex(channels: LapChannels): LapMeta[] {
 
     return {
       number: segmentIndex,
-      sourceNumber: Math.round(sampleStep(channels.lapNumber.values, channels.lapNumber.freq, midTime)),
+      sourceNumber: Math.round(
+        sampleStep(channels.lapNumber.values, channels.lapNumber.freq, midTime),
+      ),
       startTime,
       endTime,
       lapTime: channelIsCredible ? fromChannel : spanned,

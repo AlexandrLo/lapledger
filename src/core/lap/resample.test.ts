@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildLapIndex } from './lapIndex';
-import { buildLapBasis, makeDistanceGrid, resampleElapsedTime, resampleToDistance } from './resample';
+import {
+  buildLapBasis,
+  makeDistanceGrid,
+  resampleElapsedTime,
+  resampleToDistance,
+} from './resample';
 
 /** One clean lap: 100 samples at 10 Hz sweeping Car Pos Norm from 0 to 0.99. */
 function oneLap() {
@@ -227,11 +232,15 @@ describe('resampleElapsedTime', () => {
   });
 
   it('handles empty basis by returning zeros', () => {
-    const emptyBasis = { u: new Float64Array(0), t: new Float64Array(0), slopes: new Float64Array(0) };
+    const emptyBasis = {
+      u: new Float64Array(0),
+      t: new Float64Array(0),
+      slopes: new Float64Array(0),
+    };
     const grid = makeDistanceGrid(100);
 
     const out = resampleElapsedTime(emptyBasis, grid);
     expect(out).toHaveLength(grid.points);
-    expect([...out].every(v => v === 0)).toBe(true);
+    expect([...out].every((v) => v === 0)).toBe(true);
   });
 });

@@ -119,7 +119,7 @@ describe('despikeDistance', () => {
     // Verify no value between the anchors was fabricated in the reset window
     // (all values should be close to original raw values or follow the good data)
     expect(out[177]).toBeGreaterThan(1000); // 2019
-    expect(out[178]).toBeLessThan(100);     // 1.6
+    expect(out[178]).toBeLessThan(100); // 1.6
     expect(out[179]).toBeCloseTo(distance[179], 1);
   });
 

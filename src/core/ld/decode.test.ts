@@ -24,7 +24,17 @@ describe('decodeChannel', () => {
     const out = decodeFirst(
       buildLd({
         channels: [
-          { name: 'A', freq: 1, dtypeA: 3, dtype: 2, scale: 10, dec: 1, shift: 2, mul: 3, values: [1234] },
+          {
+            name: 'A',
+            freq: 1,
+            dtypeA: 3,
+            dtype: 2,
+            scale: 10,
+            dec: 1,
+            shift: 2,
+            mul: 3,
+            values: [1234],
+          },
         ],
       }),
     );
@@ -53,7 +63,9 @@ describe('decodeChannel', () => {
 
   it('rejects float16 rather than misreading it as int16', () => {
     expect(() =>
-      decodeFirst(buildLd({ channels: [{ name: 'A', freq: 1, dtypeA: 7, dtype: 2, values: [1] }] })),
+      decodeFirst(
+        buildLd({ channels: [{ name: 'A', freq: 1, dtypeA: 7, dtype: 2, values: [1] }] }),
+      ),
     ).toThrow(/float16/);
   });
 

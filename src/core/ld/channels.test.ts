@@ -15,7 +15,15 @@ describe('parseChannels', () => {
       buildLd({
         channels: [
           { name: 'Ground Speed', shortName: 'Gnd Spd', unit: 'kph', freq: 30, values: [1, 2] },
-          { name: 'Engine RPM', shortName: 'RPM', unit: 'rpm', freq: 30, dtypeA: 3, dtype: 2, values: [3] },
+          {
+            name: 'Engine RPM',
+            shortName: 'RPM',
+            unit: 'rpm',
+            freq: 30,
+            dtypeA: 3,
+            dtype: 2,
+            values: [3],
+          },
         ],
       }),
     );
@@ -32,7 +40,19 @@ describe('parseChannels', () => {
   it('reads the scaling fields as signed', () => {
     const channels = parse(
       buildLd({
-        channels: [{ name: 'A', freq: 1, dtypeA: 3, dtype: 2, shift: -5, mul: 2, scale: 10, dec: 1, values: [0] }],
+        channels: [
+          {
+            name: 'A',
+            freq: 1,
+            dtypeA: 3,
+            dtype: 2,
+            shift: -5,
+            mul: 2,
+            scale: 10,
+            dec: 1,
+            values: [0],
+          },
+        ],
       }),
     );
 

@@ -23,7 +23,7 @@ export function decodeChannel(win: ByteWindow, channel: LdChannel): Float32Array
   const out = new Float32Array(raw.length);
   const decFactor = 10 ** -channel.dec;
   for (let i = 0; i < raw.length; i++) {
-    out[i] = (raw[i] / channel.scale * decFactor + channel.shift) * channel.mul;
+    out[i] = ((raw[i] / channel.scale) * decFactor + channel.shift) * channel.mul;
   }
   return out;
 }

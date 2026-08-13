@@ -222,7 +222,10 @@ describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files',
         expect(other.meta.id).not.toBe(session.meta.id);
 
         const complete = session.meta.laps.filter((l) => l.complete);
-        const delta = computeDelta(session.elapsed(complete[0].number), other.elapsed(complete[1].number));
+        const delta = computeDelta(
+          session.elapsed(complete[0].number),
+          other.elapsed(complete[1].number),
+        );
 
         expect(delta).toHaveLength(session.grid.points);
         expect([...delta].every(Number.isFinite)).toBe(true);
@@ -281,7 +284,9 @@ describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files',
         expect(complete.length).toBeGreaterThan(1);
 
         const fastest = complete.reduce((best, lap) => (lap.lapTime < best.lapTime ? lap : best));
-        const slowest = complete.reduce((worst, lap) => (lap.lapTime > worst.lapTime ? lap : worst));
+        const slowest = complete.reduce((worst, lap) =>
+          lap.lapTime > worst.lapTime ? lap : worst,
+        );
 
         const delta = session.delta(fastest.number, slowest.number);
         expect(delta).toHaveLength(session.grid.points);
