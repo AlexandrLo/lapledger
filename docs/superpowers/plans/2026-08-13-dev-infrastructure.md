@@ -6,7 +6,7 @@
 
 **Architecture:** Six sequential tasks. Task 1 builds the container the remaining five run inside. Tasks 2–5 each change one axis of the repository (lint, test layout, fixture, imports) and end green. Task 6 writes down the resulting rules so the next session follows them. No library behaviour changes anywhere in this plan: the same assertions pass at the end as at the start, except that the integration suite stops skipping itself.
 
-**Tech Stack:** Docker + Compose, pnpm 10, Node 26 (alpine), Vite 8, Vitest 4, TypeScript 6, ESLint 9 (flat config), Prettier 3.
+**Tech Stack:** Docker + Compose, pnpm 11, Node 26 (alpine), Vite 8, Vitest 4, TypeScript 6, ESLint 10 (flat config), Prettier 3.
 
 **Spec:** `docs/superpowers/specs/2026-08-13-dev-infrastructure-design.md`
 
@@ -1008,7 +1008,7 @@ adding an alias in all three places above.
 
 ## Style
 
-ESLint 9 flat config plus Prettier. `pnpm lint` and `pnpm format:check` must be
+ESLint flat config plus Prettier. `pnpm lint` and `pnpm format:check` must be
 clean before a commit. Suppress a rule only with an inline comment explaining
 why the rule is wrong for that line.
 
