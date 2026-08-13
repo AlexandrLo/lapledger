@@ -37,7 +37,7 @@ export function pchipSlopes(xs: Float64Array, ys: Float64Array): Float64Array {
 
 function endpointSlope(hNear: number, hFar: number, dNear: number, dFar: number): number {
   const denominator = hNear + hFar;
-  let slope = denominator === 0 ? dNear : ((2 * hNear + hFar) * dNear - hNear * dFar) / denominator;
+  const slope = denominator === 0 ? dNear : ((2 * hNear + hFar) * dNear - hNear * dFar) / denominator;
   if (slope * dNear <= 0) return 0;
   if (dNear * dFar < 0 && Math.abs(slope) > Math.abs(3 * dNear)) return 3 * dNear;
   return slope;
