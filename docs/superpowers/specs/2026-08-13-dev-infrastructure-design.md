@@ -140,11 +140,11 @@ still reporting as passing.
 
 One pair — the Knockhill recording — becomes a committed fixture:
 
-- A throwaway script (written to the scratchpad, not committed) scans the whole
-  `.ld` binary for every occurrence of the driver's name, not just the header
-  field, and overwrites each with `Test Driver` NUL-padded to the original
-  byte length. Fixed-length overwriting keeps every channel offset in the file
-  valid.
+- A throwaway script overwrites the driver name with `Test Driver`, NUL-padded
+  to the original byte length; fixed-length overwriting keeps every channel
+  offset in the file valid. The script lives in the gitignored `temp/`
+  directory — it has to run inside the container, which only mounts the
+  repository — and is deleted afterwards.
 - The `.ldx` sidecar is XML and is treated the same way.
 - The file is renamed to `knockhill-cupra-tcr.{ld,ldx}`; the original name
   encoded a timestamp and the driver's name.
