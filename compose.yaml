@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - '5173:5173'
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - pnpm_store:/home/node/.local/share/pnpm/store
+
+volumes:
+  node_modules:
+  pnpm_store:
