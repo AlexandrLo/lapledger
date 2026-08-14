@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ByteWindow } from './window';
+import { ByteWindow } from '../window';
 
 function windowOf(size: number, base = 0): { bytes: Uint8Array; win: ByteWindow } {
   const bytes = new Uint8Array(size);

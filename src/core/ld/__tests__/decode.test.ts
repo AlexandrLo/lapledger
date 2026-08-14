@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildLd } from '../../../test/fixtures/buildLd';
-import { parseChannels } from './channels';
-import { decodeChannel, isDiscrete } from './decode';
-import { parseHeader } from './header';
-import { ByteWindow } from './window';
+import { buildLd } from '../../../../tests/fixtures/buildLd';
+import { parseChannels } from '../channels';
+import { decodeChannel, isDiscrete } from '../decode';
+import { parseHeader } from '../header';
+import { ByteWindow } from '../window';
 
 function decodeFirst(bytes: Uint8Array, index = 0): Float32Array {
   const win = new ByteWindow(bytes);

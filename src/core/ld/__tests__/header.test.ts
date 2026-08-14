@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildLd, META_PTR } from '../../../test/fixtures/buildLd';
-import { parseHeader } from './header';
-import { ByteWindow } from './window';
+import { buildLd, META_PTR } from '../../../../tests/fixtures/buildLd';
+import { parseHeader } from '../header';
+import { ByteWindow } from '../window';
 
 describe('parseHeader', () => {
   it('reads identity and pointers', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildLd } from '../../test/fixtures/buildLd';
-import { computeDelta, CORE_VERSION, openSession } from './index';
+import { buildLd } from '../../../tests/fixtures/buildLd';
+import { computeDelta, CORE_VERSION, openSession } from '../index';
 
 /** Two complete laps plus partial ends, 10 Hz, 1000 m per lap at 10 m/s. */
 function sampleBytes(): Uint8Array {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pchipEval, pchipSlopes, sampleLinear, sampleStep } from './interpolate';
+import { pchipEval, pchipSlopes, sampleLinear, sampleStep } from '../interpolate';
 
 function evalAt(xs: number[], ys: number[], x: number): number {
   const fx = Float64Array.from(xs);

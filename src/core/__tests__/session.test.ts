@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildLd, type FixtureChannel } from '../../test/fixtures/buildLd';
-import { computeDelta } from './lap/delta';
-import { openSession } from './session';
+import { buildLd, type FixtureChannel } from '../../../tests/fixtures/buildLd';
+import { computeDelta } from '../lap/delta';
+import { openSession } from '../session';
 
 /**
  * Two complete laps plus partial ends, 10 Hz, 1000 m per lap. Ground Speed

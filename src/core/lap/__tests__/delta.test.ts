@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDelta } from './delta';
+import { computeDelta } from '../delta';
 
 describe('computeDelta', () => {
   it('is zero for a lap against itself', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { despikeDistance } from './despike';
+import { despikeDistance } from '../despike';
 
 /** 100 samples at 10 Hz, a constant 36 kph (10 m/s), so 1 m per sample. */
 function clean(): { distance: Float32Array; speed: Float32Array } {
