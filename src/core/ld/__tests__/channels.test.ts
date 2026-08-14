@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildLd, CHAN_SIZE, META_PTR } from '@tests/fixtures/buildLd';
+
 import { parseChannels } from '@core/ld/channels';
 import { parseHeader } from '@core/ld/header';
 import { ByteWindow } from '@core/ld/window';
+import { buildLd, CHAN_SIZE, META_PTR } from '@tests/fixtures/buildLd';
 
 function parse(bytes: Uint8Array) {
   const win = new ByteWindow(bytes);

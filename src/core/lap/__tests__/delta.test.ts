@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { computeDelta } from '@core/lap/delta';
 
 describe('computeDelta', () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { ByteWindow } from '@core/ld/window';
 
 function windowOf(size: number, base = 0): { bytes: Uint8Array; win: ByteWindow } {

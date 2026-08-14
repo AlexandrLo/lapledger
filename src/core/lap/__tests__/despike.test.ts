@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { despikeDistance } from '@core/lap/despike';
 
 /** 100 samples at 10 Hz, a constant 36 kph (10 m/s), so 1 m per sample. */

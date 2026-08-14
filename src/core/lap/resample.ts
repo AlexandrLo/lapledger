@@ -1,4 +1,5 @@
 import type { DistanceGrid } from '@core/types';
+
 import { pchipEval, pchipSlopes, sampleLinear, sampleStep } from './interpolate';
 import type { ChannelSeries, LapMeta } from './lapIndex';
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { buildLapIndex } from '@core/lap/lapIndex';
 import {
   buildLapBasis,

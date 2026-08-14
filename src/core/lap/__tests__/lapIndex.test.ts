@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { buildLapIndex, type LapChannels } from '@core/lap/lapIndex';
 
 /** Three laps of 10 samples each at 10 Hz, preceded by half an out-lap. */

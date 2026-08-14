@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import perfectionist from 'eslint-plugin-perfectionist';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
@@ -16,10 +17,25 @@ export default tseslint.config(
       globals: globals.browser,
     },
     plugins: {
+      perfectionist,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
     rules: {
+      // Four bands, blank line between each: node builtins, packages, then
+      // this project reached through an alias, then the siblings that the
+      // relative-import ban below still allows. Type and value imports share
+      // a band — the plugin's default splits them, which would scatter a
+      // module's `import type { LapMeta }` far from its `import
+      // { openSession }`.
+      'perfectionist/sort-imports': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index'], 'unknown'],
+          internalPattern: ['^@core/.+', '^@app/.+', '^@tests/.+'],
+          newlinesBetween: 1,
+        },
+      ],
       // The installed eslint-plugin-react-hooks exposes a ready-made flat
       // config object under `configs.flat['recommended-latest']`; its rules
       // are spread here (rather than used as a standalone array entry) so

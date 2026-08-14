@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { ByteWindow } from '@core/ld/window';
 import { buildLd, CHAN_SIZE, META_PTR } from '@tests/fixtures/buildLd';
 

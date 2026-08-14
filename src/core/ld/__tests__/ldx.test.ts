@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { parseLdx } from '@core/ld/ldx';
 
 const SAMPLE = `<?xml version="1.0"?>
