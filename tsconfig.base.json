@@ -23,16 +23,13 @@
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
 
-    // TS 6.0 flags `baseUrl` as deprecated (removal targeted for TS 7.0) but
-    // still requires it for the non-relative `paths` values below; silence
-    // the deprecation error rather than dropping baseUrl or rewriting paths
-    // to a relative form the brief didn't specify.
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
+    // Relative `paths` values resolve against this file's own directory, so
+    // no `baseUrl` is needed — which matters because TS 6.0 deprecates
+    // `baseUrl` ahead of its removal in TS 7.0.
     "paths": {
-      "@core/*": ["src/core/*"],
-      "@app/*": ["src/app/*"],
-      "@tests/*": ["tests/*"]
+      "@core/*": ["./src/core/*"],
+      "@app/*": ["./src/app/*"],
+      "@tests/*": ["./tests/*"]
     }
   }
 }
