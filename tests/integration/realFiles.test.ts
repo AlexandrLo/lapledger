@@ -2,11 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { computeDelta, openSession } from '../../src/core';
 import { parseLdx } from '../../src/core/ld/ldx';
-import { findSampleFiles, samplesAvailable } from '../fixtures/samples';
+import { findSampleFiles } from '../fixtures/samples';
 
 const samples = findSampleFiles();
 
-describe.skipIf(!samplesAvailable() || samples.length === 0)('real MoTeC files', () => {
+describe('real MoTeC files', () => {
+  it('ships at least one committed sample recording', () => {
+    expect(samples).not.toHaveLength(0);
+  });
+
   for (const sample of samples) {
     describe(sample.name, () => {
       const ldxText = sample.ldxPath ? readFileSync(sample.ldxPath, 'latin1') : undefined;

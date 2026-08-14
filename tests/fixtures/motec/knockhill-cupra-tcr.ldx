@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<LDXFile Locale="English_United States.1252" DefaultLocale="C" Version="1.6">
+ <Maths Id="Local" Flags="1208">
+  <MathEnumerations>
+   <MathEnumeration Name="Tyres Available">
+    <Enum Name="Kumho TCR Dry (S)" Value="0"/>
+    <Enum Name="Kumho TCR Wet (WET)" Value="1"/>
+   </MathEnumeration>
+  </MathEnumerations>
+  <MathItems>
+   <MathExpression Id="FFB Mult" DisplayColorIndex="0" Interpolate="0" Script="0.80900001525879" SampleRate="0" Unit=""/>
+   <MathExpression Id="FFB Base" DisplayColorIndex="0" Interpolate="0" Script="1" SampleRate="0" Unit=""/>
+   <MathExpression Id="Max Fuel" DisplayUnit="l" DisplayColorIndex="0" Interpolate="0" Script="100" SampleRate="0" Unit="l"/>
+   <MathExpression Id="Max rpm" DisplayUnit="rpm" DisplayColorIndex="0" Interpolate="0" Script="7000" SampleRate="0" Unit="rpm"/>
+   <MathExpression Id="Max KERS KJ" DisplayUnit="KJ" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit="KJ"/>
+   <MathExpression Id="Max ERS per lap" DisplayUnit="KJ" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit="KJ"/>
+   <MathExpression Id="Max Turbo Boost" DisplayUnit="KJ" DisplayColorIndex="0" Interpolate="0" Script="2.6" SampleRate="0" Unit="KJ"/>
+   <MathExpression Id="ABS Present" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit=""/>
+   <MathExpression Id="TC Present" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit=""/>
+   <MathExpression Id="TC2 Present" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit=""/>
+   <MathExpression Id="Auto Shift" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit=""/>
+   <MathExpression Id="Auto Clutch" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit=""/>
+   <MathExpression Id="allowedTyresOut" DisplayColorIndex="0" Interpolate="0" Script="-1" SampleRate="0" Unit=""/>
+   <MathExpression Id="Max ICE Power" DisplayUnit="hp" DisplayColorIndex="0" Interpolate="0" Script="352.08168318313" SampleRate="0" Unit="hp"/>
+   <MathExpression Id="Max ICE Torque" DisplayUnit="Nm" DisplayColorIndex="0" Interpolate="0" Script="421.08823529412" SampleRate="0" Unit="Nm"/>
+   <MathExpression Id="Damper THLD Bump F" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="30" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Rebound F" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="30" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Bump R" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="30" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Rebound R" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="30" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Bump HF" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="99.99" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Rebound HF" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="99.99" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Bump HR" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="99.99" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="Damper THLD Rebound HR" DisplayUnit="mm/s" DisplayColorIndex="0" Interpolate="0" Script="99.99" SampleRate="0" Unit="mm/s"/>
+   <MathExpression Id="bumpStop Gap F" DisplayUnit="mm" DisplayColorIndex="0" Interpolate="0" Script="108" SampleRate="0" Unit="mm"/>
+   <MathExpression Id="bumpStop Gap R" DisplayUnit="mm" DisplayColorIndex="0" Interpolate="0" Script="98" SampleRate="0" Unit="mm"/>
+   <MathExpression Id="bumpStop Gap HF" DisplayUnit="mm" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit="mm"/>
+   <MathExpression Id="bumpStop Gap HR" DisplayUnit="mm" DisplayColorIndex="0" Interpolate="0" Script="0" SampleRate="0" Unit="mm"/>
+   <MathExpression Id="FFB Steer Assist" DisplayColorIndex="0" Interpolate="0" Script="1" SampleRate="0" Unit=""/>
+   <MathExpression Id="Tyres" DisplayDPS="0" DisplayColorIndex="0" Interpolate="0" EnumerationName="Tyres Available" Script="'Tyres Compound' []" SampleRate="0" Unit=""/>
+  </MathItems>
+ </Maths>
+ <Layers>
+  <Layer>
+   <MarkerBlock>
+    <MarkerGroup Name="Beacons" Index="33">
+     <Marker Version="100" ClassName="BCN" Name="Manual.1" Flags="77" Time="6.71700000000000000e+07"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.2" Flags="77" Time="1.23334000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.3" Flags="77" Time="1.85809000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.4" Flags="77" Time="2.42045000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.5" Flags="77" Time="2.95826000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.6" Flags="77" Time="3.49771000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.7" Flags="77" Time="4.03553000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.8" Flags="77" Time="4.56550000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.9" Flags="77" Time="5.10129000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.10" Flags="77" Time="5.64217000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.11" Flags="77" Time="6.17867000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.12" Flags="77" Time="6.71486000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.13" Flags="77" Time="7.24811000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.14" Flags="77" Time="7.78964000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.15" Flags="77" Time="8.33130000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.16" Flags="77" Time="8.87928000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.17" Flags="77" Time="9.41450000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.18" Flags="77" Time="9.94517000000000000e+08"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.19" Flags="77" Time="1.04845800000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.20" Flags="77" Time="1.10119000000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.21" Flags="77" Time="1.15443100000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.22" Flags="77" Time="1.20691400000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.23" Flags="77" Time="1.26053300000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.24" Flags="77" Time="1.31302500000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.25" Flags="77" Time="1.36659400000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.26" Flags="77" Time="1.42354300000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.27" Flags="77" Time="1.47621500000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.28" Flags="77" Time="1.52989600000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.29" Flags="77" Time="1.58437100000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.30" Flags="77" Time="1.63694500000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.31" Flags="77" Time="1.68985400000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.32" Flags="77" Time="1.74282500000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.33" Flags="77" Time="1.79691400000000000e+09"/>
+     <Marker Version="100" ClassName="BCN" Name="Manual.34" Flags="77" Time="1.85061100000000000e+09"/>
+    </MarkerGroup>
+   </MarkerBlock>
+   <RangeBlock/>
+  </Layer>
+  <Details>
+   <Numeric Id="Vehicle Wheelbase" Value="2.715" Unit="m" DPS="3"/>
+   <Numeric Id="Vehicle Track" Value="1.693" Unit="m" DPS="3"/>
+   <Numeric Id="Vehicle COG" Value="0.6" Unit="%" DPS="3"/>
+   <Numeric Id="Venue Length" Value="2019.39" Unit="m" DPS="6"/>
+   <String Id="Venue Category" Value="knockhill_lfm"/>
+   <Numeric Id="Fuel Tank Capacity" Value="100" Unit="l" DPS="2"/>
+   <Numeric Id="Vehicle Weight" Value="1255" Unit="kg" DPS="2"/>
+   <Numeric Id="Tyre Consumption Rate" Value="1" Unit="" DPS="2"/>
+   <Numeric Id="Fuel Consumption Rate" Value="1" Unit="" DPS="2"/>
+   <Numeric Id="Ballast" Value="0" Unit="kg" DPS="1"/>
+   <Numeric Id="Restrictor" Value="0" Unit="%" DPS="1"/>
+   <String Id="InputMode" Value="Wheel"/>
+   <String Id="AppName" Value="Telemetrick v1.72"/>
+   <Numeric Id="Gear 1" Value="2.3333" Unit="" DPS="2"/>
+   <Numeric Id="Gear 2" Value="1.7692" Unit="" DPS="2"/>
+   <Numeric Id="Gear 3" Value="1.409" Unit="" DPS="2"/>
+   <Numeric Id="Gear 4" Value="1.1428" Unit="" DPS="2"/>
+   <Numeric Id="Gear 5" Value="0.9615" Unit="" DPS="2"/>
+   <Numeric Id="Gear 6" Value="0.8275" Unit="" DPS="2"/>
+   <Numeric Id="Diff Ratio" Value="3.8" Unit="" DPS="2"/>
+   <String Id="Sky" Value="ScatteredClouds"/>
+   <String Id="Weather Comment" Value="SkyOcclusion: 0.980, rainIntensity: 0.000"/>
+   <Numeric Id="Baro Pressure" Value="1.0132" Unit="bar" DPS="4"/>
+   <Numeric Id="Rel Humidity" Value="50" Unit="%" DPS="2"/>
+   <String Id="Vehicle Desc" Value="Cupra by Fuzo's Workshop, Cupra Leon Competición 2024, year: 2020 version: 1.2"/>
+   <String Id="Start Lap" Value="2"/>
+   <Numeric Id="Gear 7" Value="0" Unit="" DPS="2"/>
+   <Numeric Id="Gear 8" Value="0" Unit="" DPS="2"/>
+   <Numeric Id="Gear 9" Value="0" Unit="" DPS="2"/>
+   <Numeric Id="Gear 10" Value="0" Unit="" DPS="2"/>
+   <String Id="Total Laps" Value="35"/>
+   <String Id="Fastest Time" Value="0:52.483"/>
+   <String Id="Fastest Lap" Value="21"/>
+  </Details>
+ </Layers>
+</LDXFile>
