@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLdx } from '../ldx';
+import { parseLdx } from '@core/ld/ldx';
 
 const SAMPLE = `<?xml version="1.0"?>
 <LDXFile Locale="Russian_Russia.1251" Version="1.6">

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildLapIndex } from '../lapIndex';
+import { buildLapIndex } from '@core/lap/lapIndex';
 import {
   buildLapBasis,
   makeDistanceGrid,
   resampleElapsedTime,
   resampleToDistance,
-} from '../resample';
+} from '@core/lap/resample';
 
 /** One clean lap: 100 samples at 10 Hz sweeping Car Pos Norm from 0 to 0.99. */
 function oneLap() {

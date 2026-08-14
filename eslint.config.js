@@ -27,6 +27,23 @@ export default tseslint.config(
       // react-hooks rules to every file ESLint touches.
       ...reactHooks.configs.flat['recommended-latest'].rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['..', '../*', '../**'],
+              message:
+                'Reach outside the directory through @core, @app or @tests, not through "..".',
+            },
+            {
+              group: ['./*/*', './*/**'],
+              message:
+                'Relative imports may go one level deep. Use @core, @app or @tests for anything deeper.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

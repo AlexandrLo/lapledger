@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ByteWindow } from '../../../src/core/ld/window';
-import { buildLd, CHAN_SIZE, META_PTR } from '../buildLd';
+import { ByteWindow } from '@core/ld/window';
+import { buildLd, CHAN_SIZE, META_PTR } from '@tests/fixtures/buildLd';
 
 describe('buildLd', () => {
   it('writes a header a reader can recognise', () => {

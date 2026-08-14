@@ -1,19 +1,19 @@
-import { parseChannels } from './ld/channels';
-import { decodeChannel, isDiscrete } from './ld/decode';
-import { parseHeader } from './ld/header';
-import { parseLdx } from './ld/ldx';
-import type { LdChannel } from './ld/types';
-import { ByteWindow } from './ld/window';
-import { computeDelta } from './lap/delta';
-import { despikeDistance } from './lap/despike';
-import { buildLapIndex, type ChannelSeries, type LapMeta } from './lap/lapIndex';
+import { parseChannels } from '@core/ld/channels';
+import { decodeChannel, isDiscrete } from '@core/ld/decode';
+import { parseHeader } from '@core/ld/header';
+import { parseLdx } from '@core/ld/ldx';
+import type { LdChannel } from '@core/ld/types';
+import { ByteWindow } from '@core/ld/window';
+import { computeDelta } from '@core/lap/delta';
+import { despikeDistance } from '@core/lap/despike';
+import { buildLapIndex, type ChannelSeries, type LapMeta } from '@core/lap/lapIndex';
 import {
   buildLapBasis,
   makeDistanceGrid,
   resampleElapsedTime,
   resampleToDistance,
   type LapBasis,
-} from './lap/resample';
+} from '@core/lap/resample';
 import type { ChannelMeta, DistanceGrid, SessionId, VehicleInfo } from './types';
 
 const CAR_POS_NORM = 'Car Pos Norm';

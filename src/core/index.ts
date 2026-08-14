@@ -7,7 +7,7 @@ export type { OpenSessionOptions, Session, SessionMeta } from './session';
  * as `computeDelta(a.elapsed(l1), b.elapsed(l2))`, provided both sessions share
  * a grid. Within one session, `Session.delta` is the shorthand.
  */
-export { computeDelta } from './lap/delta';
-export { makeDistanceGrid } from './lap/resample';
-export type { LapMeta } from './lap/lapIndex';
+export { computeDelta } from '@core/lap/delta';
+export { makeDistanceGrid } from '@core/lap/resample';
+export type { LapMeta } from '@core/lap/lapIndex';
 export type { ChannelMeta, DistanceGrid, LapRef, SessionId, VehicleInfo } from './types';

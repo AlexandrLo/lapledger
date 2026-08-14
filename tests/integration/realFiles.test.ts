@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { computeDelta, openSession } from '../../src/core';
-import { parseLdx } from '../../src/core/ld/ldx';
-import { findSampleFiles } from '../fixtures/samples';
+import { computeDelta, openSession } from '@core/index';
+import { parseLdx } from '@core/ld/ldx';
+import { findSampleFiles } from '@tests/fixtures/samples';
 
 const samples = findSampleFiles();
 
