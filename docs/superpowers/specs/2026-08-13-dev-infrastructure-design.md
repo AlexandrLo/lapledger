@@ -74,15 +74,17 @@ so a future session does not reach for `npm test` and undo the work.
 
 `package-lock.json` is deleted and `pnpm-lock.yaml` is generated inside the
 container. `package.json` gains a pinned `packageManager` field naming the
-latest pnpm 10.x available at migration time; 10.16 or newer is required, as
-that is the release where `minimumReleaseAge` landed.
+latest pnpm available at migration time; 10.16 or newer is required, as
+that is the release where `minimumReleaseAge` landed. pnpm 11.21.0 was
+installed (a deviation from the pnpm 10.x originally scoped here, reviewed and
+accepted).
 
 `pnpm-workspace.yaml` carries two settings:
 
 - `minimumReleaseAge: 10080` — ignore any package version published less than
   seven days ago. A compromised release is usually pulled from npm well inside
   that window.
-- `onlyBuiltDependencies: []` — pnpm 10 already refuses to run dependency
+- `onlyBuiltDependencies: []` — pnpm already refuses to run dependency
   lifecycle scripts by default; stating the empty allow-list makes the decision
   explicit and forces a deliberate edit before any package may run
   `postinstall`. This is the second half of the same defence: release age keeps

@@ -513,19 +513,19 @@ console.log(`wrote ${dst} (${buf.length} bytes, unchanged length)`);
 
 ```bash
 mkdir -p tests/fixtures/motec
-cp "temp/example/2 Stanley Bublick/fw_cupra_tcr_2024/knockhill2017-knockhill_lfm/06082026-213050-Stanley Bublick-fw_cupra_tcr_2024-knockhill2017-knockhill_lfm.ldx" \
+cp "temp/example/<recording>/source.ldx" \
    tests/fixtures/motec/knockhill-cupra-tcr.ldx
 docker compose run --rm app node temp/anonymize-fixture.mjs \
-  "temp/example/2 Stanley Bublick/fw_cupra_tcr_2024/knockhill2017-knockhill_lfm/06082026-213050-Stanley Bublick-fw_cupra_tcr_2024-knockhill2017-knockhill_lfm.ld" \
+  "temp/example/<recording>/source.ld" \
   tests/fixtures/motec/knockhill-cupra-tcr.ld
 ```
 
-Expected: `driver field before: "Stanley Bublick"`, then a 28602976-byte output.
+Expected: `driver field before: "<driver name>"`, then a 28602976-byte output.
 
 - [ ] **Step 3: Verify the name is gone and the file length is unchanged**
 
 ```bash
-grep -c -i -E 'Stanley|Bublick' tests/fixtures/motec/knockhill-cupra-tcr.ld tests/fixtures/motec/knockhill-cupra-tcr.ldx
+grep -c -i -E '<driver name fragments>' tests/fixtures/motec/knockhill-cupra-tcr.ld tests/fixtures/motec/knockhill-cupra-tcr.ldx
 ls -l tests/fixtures/motec/
 ```
 
@@ -1030,11 +1030,11 @@ docker compose run --rm app pnpm build
 test ! -e package-lock.json && test ! -e test  # points 2, 3
 grep -rn "from '\.\." src tests --include=*.ts --include=*.tsx        # point 7
 grep -rn "from '\./[^']*/[^']*'" src tests --include=*.ts --include=*.tsx
-grep -rc -i -E 'Stanley|Bublick' tests/fixtures/motec/* # point 5
+git grep -i -E '<driver name fragments>'      # point 5, repo-wide per spec §9
 git status --porcelain                         # clean
 ```
 
-Expected: the four pnpm commands succeed, the two `test !` checks pass, both greps print nothing, the fixture grep prints `0` for each file, and the working tree is clean.
+Expected: the four pnpm commands succeed, the two `test !` checks pass, both greps print nothing, the driver-name grep prints nothing, and the working tree is clean.
 
 - [ ] **The integration suite really ran**
 

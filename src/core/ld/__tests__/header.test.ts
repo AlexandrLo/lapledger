@@ -6,7 +6,7 @@ import { ByteWindow } from '@core/ld/window';
 describe('parseHeader', () => {
   it('reads identity and pointers', () => {
     const bytes = buildLd({
-      driver: '7  Stanley Bublick',
+      driver: '7  Test Driver',
       vehicle: 'fw_cupra_tcr_2024',
       venue: 'monza-lfm',
       date: '10/03/2026',
@@ -28,7 +28,7 @@ describe('parseHeader', () => {
     expect(head.deviceVersion).toBe(420);
     expect(head.date).toBe('10/03/2026');
     expect(head.time).toBe('20:31:38');
-    expect(head.driver).toBe('7  Stanley Bublick');
+    expect(head.driver).toBe('7  Test Driver');
     expect(head.vehicle).toBe('fw_cupra_tcr_2024');
     expect(head.venue).toBe('monza-lfm');
     expect(head.shortComment).toBe('Kumho TCR Dry (S)');

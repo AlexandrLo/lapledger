@@ -4,3 +4,6 @@ temp
 docs
 pnpm-lock.yaml
 tests/fixtures/motec
+.superpowers
+.claude
+.vscode
