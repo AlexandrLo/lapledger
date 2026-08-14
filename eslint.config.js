@@ -9,10 +9,6 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'temp', 'tests/fixtures/motec'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  // The installed eslint-plugin-react-hooks exposes a ready-made flat config
-  // object under `configs.flat['recommended-latest']`, so it is used directly
-  // instead of spreading `configs.recommended.rules` into the block below.
-  reactHooks.configs.flat['recommended-latest'],
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -20,9 +16,16 @@ export default tseslint.config(
       globals: globals.browser,
     },
     plugins: {
+      'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
     rules: {
+      // The installed eslint-plugin-react-hooks exposes a ready-made flat
+      // config object under `configs.flat['recommended-latest']`; its rules
+      // are spread here (rather than used as a standalone array entry) so
+      // the rule set stays scoped to `.ts`/`.tsx` files instead of applying
+      // react-hooks rules to every file ESLint touches.
+      ...reactHooks.configs.flat['recommended-latest'].rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
