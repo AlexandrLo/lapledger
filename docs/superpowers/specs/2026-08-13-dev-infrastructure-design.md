@@ -45,30 +45,39 @@ user instead of root.
 A single service, `app`:
 
 - build context `.`
-- bind mount of the repository at `/app`
-- a **named volume** on `/app/node_modules`, so the Linux-native install inside
-  the container is never shadowed by (or written over) a host `node_modules`
+- bind mount of the repository at `/app`, `node_modules` included (see the
+  revision note in §10 — this started out as a named volume)
+- a named volume on pnpm's metadata cache, so a `--rm` run does not re-fetch
+  the registry index every time
 - port `5173` published
 - default command `pnpm dev --host 0.0.0.0` — Vite must bind to all interfaces
   to be reachable from the host
 
-A `.dockerignore` keeps `node_modules`, `dist`, `.git` and `temp` out of the
-build context.
+A `.dockerignore` keeps `node_modules`, `.pnpm-store`, `dist`, `.git` and
+`temp` out of the build context.
 
 ### Command protocol
 
-Every command runs through the container:
+Every command runs through the container, and a `Makefile` is the interface —
+one target per operation, each wrapping a `docker compose` invocation, with
+`make help` listing them and `make check` running the full gate:
 
 ```
-docker compose up            # dev server on http://localhost:5173
-docker compose run --rm app pnpm test
-docker compose run --rm app pnpm lint
-docker compose run --rm app pnpm build
+make install     # required: fresh clone, or after pnpm-lock.yaml changes
+make dev         # dev server on http://localhost:5173
+make test
+make lint
+make build
+make check
 ```
 
 This applies to humans and to coding agents alike. `AGENTS.md` — currently an
 empty file — documents the protocol, the directory layout and the import rules,
-so a future session does not reach for `npm test` and undo the work.
+so a future session does not reach for `npm test` and undo the work. The
+targets are also listed in `.claude/settings.local.json`'s allow-list, so an
+agent runs them without a prompt per invocation; host `npm`, `npx`, `pnpm` and
+`node` are denied there outright. That file is gitignored — it is a local
+convenience, not part of the contract.
 
 ## 3. pnpm and release-age protection
 
@@ -172,6 +181,7 @@ lap identity derived from `Car Pos Norm` wraps) are unchanged.
 - `typescript-eslint` recommended
 - `eslint-plugin-react-hooks`
 - `eslint-plugin-react-refresh`
+- `eslint-plugin-perfectionist`, for import grouping (§7)
 - `eslint-config-prettier` last, to disable stylistic rules Prettier owns
 - `dist/` ignored
 
@@ -209,6 +219,21 @@ The ban is enforced by ESLint `no-restricted-imports` with two pattern groups:
 Both carry the message that `@core`, `@app` or `@tests` should be used instead.
 `./sibling` remains legal.
 
+### Grouping
+
+What survives the ban is then ordered by `perfectionist/sort-imports` into four
+bands, blank line between each, alphabetical within: `node:` builtins,
+packages, the three aliases, siblings. Type and value imports share a band —
+the plugin's default splits them, which would separate a module's
+`import type { LapMeta }` from its `import { openSession }`.
+
+The ordering is fully autofixable, so it costs nothing to comply with and never
+becomes a review topic. The plugin is `perfectionist` rather than the more
+conventional `eslint-plugin-import-x` because import-x depends on the native
+`unrs-resolver`, whose `postinstall` script `onlyBuiltDependencies: []` blocks
+by design (§3); perfectionist is pure JavaScript and classifies specifiers by
+pattern, needing no module resolution at all.
+
 This rule is switched on during the alias step, not during the linter step:
 moving unit tests into `__tests__` temporarily turns `./window` into
 `../window`, and those imports are rewritten to aliases in the same step that
@@ -239,3 +264,29 @@ And in the tree: no `package-lock.json`, no `test/` directory, no `.test.ts`
 outside a `__tests__` directory or `tests/integration/`, no import matching the
 banned patterns, and no occurrence of the original driver's name in any
 committed file.
+
+## 10. Revision, 2026-08-14
+
+A round of review after the work landed produced four findings, all of them
+about the developer's experience of the setup rather than its correctness.
+
+**`node_modules` was invisible to the host.** The named volume on
+`/app/node_modules` did its job too well: the host saw an empty, root-owned
+directory, so no editor could resolve an import and every symbol in the project
+was unnavigable. The volume is gone. The install lands on the bind-mounted tree
+and the container remains the only writer — an install run on the host would
+fetch the wrong platform's binaries.
+
+pnpm's content-addressable store follows it, to a gitignored `.pnpm-store` in
+the project root. A store on the other side of a filesystem boundary forces
+pnpm to copy every package rather than link it; on the same btrfs filesystem
+the packages are reflink clones and the two directories share their extents.
+The original concern — that the store must not be written back to the host —
+no longer applies once the install itself is on the host by design.
+
+**A `Makefile`** replaces `docker compose run --rm app …` as the thing anyone
+types (§2).
+
+**Its targets are pre-approved** in `.claude/settings.local.json` (§2).
+
+**Import grouping** is enforced (§7).
