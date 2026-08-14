@@ -60,7 +60,7 @@ The barrel is `@core/index`; there is no bare `@core` mapping.
 
 Relative imports may only reach a sibling: `./window` is fine, `./ld/window` and
 `../types` are not. ESLint enforces this. Adding a top-level directory means
-adding an alias in all three places above.
+adding an alias in `tsconfig.base.json` and `vite.config.ts`.
 
 ## Style
 
