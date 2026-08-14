@@ -1,8 +1,8 @@
 minimumReleaseAge: 10080
 onlyBuiltDependencies: []
 
-# pnpm's default store location is workspace-root-relative, which would place
-# the content-addressable store on the bind-mounted project tree instead of
-# the `pnpm_store` volume declared in compose.yaml. Pin it explicitly so the
-# store is cached in the volume, not written back to the host.
-storeDir: /home/node/.local/share/pnpm/store
+# The store has to sit on the same filesystem as node_modules for pnpm to
+# hardlink packages into place instead of copying them; since node_modules is
+# now on the bind-mounted project tree, the store follows it there. The path is
+# relative to this file, gitignored, and safe to delete.
+storeDir: .pnpm-store

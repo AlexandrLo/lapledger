@@ -11,12 +11,13 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 
 WORKDIR /app
 
-# Docker seeds a fresh named volume from the ownership and contents of the
-# image directory it is mounted over. Creating and chowning these paths here is
-# what lets the unprivileged `node` user write to the node_modules and pnpm
-# store volumes declared in compose.yaml.
-RUN mkdir -p /app/node_modules "$PNPM_HOME/store" \
- && chown -R node:node /app "$PNPM_HOME"
+# /app is covered by a bind mount at run time and inherits the host user's
+# ownership, so only the paths outside it need preparing here. Docker seeds a
+# fresh named volume from the ownership of the image directory it is mounted
+# over, which is what lets the unprivileged `node` user write to the pnpm
+# metadata cache declared in compose.yaml.
+RUN mkdir -p "$PNPM_HOME" /home/node/.cache/pnpm \
+ && chown -R node:node /app /home/node
 
 USER node
 

@@ -6,7 +6,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'temp', 'tests/fixtures/motec'] },
+  { ignores: ['dist', 'node_modules', '.pnpm-store', 'temp', 'tests/fixtures/motec'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -5,10 +5,16 @@ services:
     ports:
       - '5173:5173'
     volumes:
+      # The whole repository, node_modules included. An earlier revision hid
+      # /app/node_modules behind a named volume; that kept the install out of
+      # the host tree and left editors with an empty directory and no way to
+      # resolve an import. The install now lands on the host, where the IDE
+      # can read it, and the container stays the only thing that writes it.
       - .:/app
-      - node_modules:/app/node_modules
-      - pnpm_store:/home/node/.local/share/pnpm/store
+      # Package metadata only. The content-addressable store lives in the
+      # project tree (see storeDir in pnpm-workspace.yaml) so pnpm can hardlink
+      # into node_modules instead of copying across a filesystem boundary.
+      - pnpm_cache:/home/node/.cache/pnpm
 
 volumes:
-  node_modules:
-  pnpm_store:
+  pnpm_cache:
