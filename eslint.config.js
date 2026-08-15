@@ -40,7 +40,7 @@ export default tseslint.config(
         'error',
         {
           groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index'], 'unknown'],
-          internalPattern: ['^@core/.+', '^@app/.+', '^@tests/.+'],
+          internalPattern: ['^@core/.+', '^@app/.+', '^@worker/.+', '^@tests/.+'],
           newlinesBetween: 1,
         },
       ],
@@ -53,12 +53,13 @@ export default tseslint.config(
             {
               group: ['..', '../*', '../**'],
               message:
-                'Reach outside the directory through @core, @app or @tests, not through "..".',
+                'Reach outside the directory through @core, @app, @worker or @tests, not "..".',
             },
             {
               group: ['./*/*', './*/**'],
               message:
-                'Relative imports may go one level deep. Use @core, @app or @tests for anything deeper.',
+                'Relative imports may go one level deep. Use @core, @app, @worker or @tests ' +
+                'for anything deeper.',
             },
           ],
         },

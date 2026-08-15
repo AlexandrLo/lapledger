@@ -65,11 +65,12 @@ integration suite must never be allowed to pass by skipping.
 
 ## Imports
 
-Three aliases, resolved in `tsconfig.base.json`, `vite.config.ts` and (through
+Four aliases, resolved in `tsconfig.base.json`, `vite.config.ts` and (through
 `mergeConfig`) `vitest.config.ts`:
 
     @core/*   → src/core/*
     @app/*    → src/app/*
+    @worker/* → src/worker/*
     @tests/*  → tests/*
 
 The barrel is `@core/index`; there is no bare `@core` mapping.
@@ -83,7 +84,10 @@ alphabetical inside each group. ESLint enforces both rules and `make lint-fix`
 applies the ordering, so don't sort by hand.
 
 Adding a top-level directory means adding an alias in `tsconfig.base.json` and
-`vite.config.ts`, and a pattern in `eslint.config.js`'s `internalPattern`.
+`vite.config.ts`, and a pattern in `eslint.config.js`'s `internalPattern`. A
+directory that needs a different `lib` also needs its own project file —
+`src/worker` runs in `WebWorker`, not `DOM`, so it has `tsconfig.worker.json`
+and is excluded from `tsconfig.app.json`.
 `tsconfig.node.json` (config files: `vite.config.ts`, `vitest.config.ts`, …)
 does not extend `tsconfig.base.json` and has no aliases — don't import through
 one there.
