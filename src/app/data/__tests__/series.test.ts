@@ -62,6 +62,28 @@ describe('createSeriesCache', () => {
     expect(client.calls).toEqual(['getSeries', 'getSeries']);
   });
 
+  it('does not drop a series entry whose channel name merely contains the forgotten session id', async () => {
+    const client = fakeClient();
+    const cache = createSeriesCache(client);
+
+    await cache.series(LAP, 'Ground Speed');
+    cache.forget('Ground');
+    await cache.series(LAP, 'Ground Speed');
+
+    expect(client.calls).toEqual(['getSeries']);
+  });
+
+  it('drops a delta entry through either of the two sessions it depends on', async () => {
+    const client = fakeClient();
+    const cache = createSeriesCache(client);
+
+    await cache.delta({ sessionId: 'a', lapNumber: 1 }, { sessionId: 'b', lapNumber: 2 });
+    cache.forget('b');
+    await cache.delta({ sessionId: 'a', lapNumber: 1 }, { sessionId: 'b', lapNumber: 2 });
+
+    expect(client.calls).toEqual(['getDelta', 'getDelta']);
+  });
+
   it('does not cache a failure', async () => {
     let attempt = 0;
     const client: TelemetryClient = {

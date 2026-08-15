@@ -9,53 +9,65 @@ export type SeriesCache = {
   forget(sessionId: SessionId): void;
 };
 
+// A character no channel name, venue or session id can contain, so no key
+// can be confused with another.
+const SEP = ' ';
+
 function lapPart(lap: LapRef): string {
-  return `${lap.sessionId} ${lap.lapNumber}`;
+  return `${lap.sessionId}${SEP}${lap.lapNumber}`;
 }
 
+type Entry = { promise: Promise<Float32Array>; sessions: SessionId[] };
+
 export function createSeriesCache(client: TelemetryClient): SeriesCache {
-  const inFlight = new Map<string, Promise<Float32Array>>();
+  const inFlight = new Map<string, Entry>();
 
   // The promise is cached rather than the array, so a second caller arriving
   // during the round trip joins it instead of starting a second one. A
   // rejection is evicted: an error must not be remembered forever.
-  const once = (key: string, run: () => Promise<Float32Array>): Promise<Float32Array> => {
+  const once = (
+    key: string,
+    sessions: SessionId[],
+    run: () => Promise<Float32Array>,
+  ): Promise<Float32Array> => {
     const existing = inFlight.get(key);
-    if (existing) return existing;
-    const started = run().catch((error: unknown) => {
+    if (existing) return existing.promise;
+    const promise = run().catch((error: unknown) => {
       inFlight.delete(key);
       throw error;
     });
-    inFlight.set(key, started);
-    return started;
+    inFlight.set(key, { promise, sessions });
+    return promise;
   };
 
   return {
     series(lap, channel) {
-      return once(`series ${lapPart(lap)} ${channel}`, async () => {
+      const key = `series${SEP}${lapPart(lap)}${SEP}${channel}`;
+      return once(key, [lap.sessionId], async () => {
         const result = await client.request({ kind: 'getSeries', lap, channel });
         return result.values;
       });
     },
 
     elapsed(lap) {
-      return once(`elapsed ${lapPart(lap)}`, async () => {
+      const key = `elapsed${SEP}${lapPart(lap)}`;
+      return once(key, [lap.sessionId], async () => {
         const result = await client.request({ kind: 'getElapsed', lap });
         return result.values;
       });
     },
 
     delta(reference, comparison) {
-      const key = `delta ${lapPart(reference)} ${lapPart(comparison)}`;
-      return once(key, async () => {
+      const key = `delta${SEP}${lapPart(reference)}${SEP}${lapPart(comparison)}`;
+      return once(key, [reference.sessionId, comparison.sessionId], async () => {
         const result = await client.request({ kind: 'getDelta', reference, comparison });
         return result.values;
       });
     },
 
     forget(sessionId) {
-      for (const key of [...inFlight.keys()]) {
-        if (key.includes(` ${sessionId} `)) inFlight.delete(key);
+      for (const [key, entry] of [...inFlight]) {
+        if (entry.sessions.includes(sessionId)) inFlight.delete(key);
       }
     },
   };
