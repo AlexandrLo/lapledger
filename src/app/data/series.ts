@@ -24,7 +24,11 @@ export function createSeriesCache(client: TelemetryClient): SeriesCache {
 
   // The promise is cached rather than the array, so a second caller arriving
   // during the round trip joins it instead of starting a second one. A
-  // rejection is evicted: an error must not be remembered forever.
+  // rejection is evicted: an error must not be remembered forever. The
+  // identity check guards against a stale rejection deleting a newer entry:
+  // if forget() (or a fresh call for the same key) replaced this entry while
+  // the request was in flight, only the entry this handler belongs to may be
+  // removed.
   const once = (
     key: string,
     sessions: SessionId[],
@@ -32,8 +36,8 @@ export function createSeriesCache(client: TelemetryClient): SeriesCache {
   ): Promise<Float32Array> => {
     const existing = inFlight.get(key);
     if (existing) return existing.promise;
-    const promise = run().catch((error: unknown) => {
-      inFlight.delete(key);
+    const promise: Promise<Float32Array> = run().catch((error: unknown) => {
+      if (inFlight.get(key)?.promise === promise) inFlight.delete(key);
       throw error;
     });
     inFlight.set(key, { promise, sessions });

@@ -76,12 +76,54 @@ describe('createSeriesCache', () => {
   it('drops a delta entry through either of the two sessions it depends on', async () => {
     const client = fakeClient();
     const cache = createSeriesCache(client);
+    const reference = { sessionId: 'a', lapNumber: 1 };
+    const comparison = { sessionId: 'b', lapNumber: 2 };
 
-    await cache.delta({ sessionId: 'a', lapNumber: 1 }, { sessionId: 'b', lapNumber: 2 });
+    await cache.delta(reference, comparison);
+    cache.forget('a');
+    await cache.delta(reference, comparison);
     cache.forget('b');
-    await cache.delta({ sessionId: 'a', lapNumber: 1 }, { sessionId: 'b', lapNumber: 2 });
+    await cache.delta(reference, comparison);
 
-    expect(client.calls).toEqual(['getDelta', 'getDelta']);
+    expect(client.calls).toEqual(['getDelta', 'getDelta', 'getDelta']);
+  });
+
+  it('keeps a fresh entry alive when an older, forgotten request for the same key rejects', async () => {
+    let calls = 0;
+    const deferred: Array<{
+      resolve: (value: { kind: string; values: Float32Array }) => void;
+      reject: (error: unknown) => void;
+    }> = [];
+    const client: TelemetryClient = {
+      request: vi.fn(() => {
+        calls += 1;
+        return new Promise((resolve, reject) => {
+          deferred.push({ resolve, reject });
+        });
+      }) as unknown as TelemetryClient['request'],
+      terminate: vi.fn(),
+    };
+    const cache = createSeriesCache(client);
+
+    // Request A starts and is still in flight when its session is forgotten.
+    const first = cache.series(LAP, 'Ground Speed');
+    first.catch(() => {});
+    cache.forget(LAP.sessionId);
+    // Request B starts for the same key, taking A's old spot in the map.
+    const second = cache.series(LAP, 'Ground Speed');
+
+    // A rejects. Wait for its own rejection handler to run to completion.
+    deferred[0].reject(new Error('boom'));
+    await first.catch(() => {});
+
+    // A stale rejection handler must not evict B's fresh entry: a third
+    // caller should join B rather than trigger a spurious third request.
+    const third = cache.series(LAP, 'Ground Speed');
+    expect(third).toBe(second);
+    expect(calls).toBe(2);
+
+    deferred[1].resolve({ kind: 'series', values: Float32Array.from([9]) });
+    await expect(second).resolves.toEqual(Float32Array.from([9]));
   });
 
   it('does not cache a failure', async () => {
