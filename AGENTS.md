@@ -79,7 +79,7 @@ Relative imports may only reach a sibling: `./window` is fine, `./ld/window` and
 `../types` are not.
 
 Import blocks are grouped, in this order, with a blank line between groups:
-`node:` builtins, packages, `@core`/`@app`/`@tests`, then siblings —
+`node:` builtins, packages, `@core`/`@app`/`@worker`/`@tests`, then siblings —
 alphabetical inside each group. ESLint enforces both rules and `make lint-fix`
 applies the ordering, so don't sort by hand.
 
