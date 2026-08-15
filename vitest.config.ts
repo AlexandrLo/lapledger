@@ -7,7 +7,10 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'node',
-      include: ['src/**/__tests__/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
+      include: [
+        'src/**/__tests__/**/*.test.{ts,tsx}', 
+        'tests/**/*.test.{ts,tsx}',
+      ],
     },
   }),
 );

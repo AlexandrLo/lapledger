@@ -1,0 +1,6 @@
+#!/bin/sh
+# Installed via `git config core.hooksPath .githooks`.
+# Runs the same checks CI expects before a commit is allowed.
+set -e
+
+exec make check

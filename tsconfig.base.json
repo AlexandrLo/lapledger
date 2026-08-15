@@ -6,7 +6,7 @@
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -14,7 +14,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    // Linting
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -23,9 +23,7 @@
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
 
-    // Relative `paths` values resolve against this file's own directory, so
-    // no `baseUrl` is needed — which matters because TS 6.0 deprecates
-    // `baseUrl` ahead of its removal in TS 7.0.
+    // This should be kept manually in sync with the `paths` in vite.config
     "paths": {
       "@core/*": ["./src/core/*"],
       "@app/*": ["./src/app/*"],

@@ -1,5 +1,5 @@
 import js from '@eslint/js';
-import prettier from 'eslint-config-prettier';
+import stylistic from '@stylistic/eslint-plugin';
 import perfectionist from 'eslint-plugin-perfectionist';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
@@ -11,7 +11,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.browser,
@@ -20,14 +20,22 @@ export default tseslint.config(
       perfectionist,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      '@stylistic': stylistic,
     },
     rules: {
-      // Four bands, blank line between each: node builtins, packages, then
-      // this project reached through an alias, then the siblings that the
-      // relative-import ban below still allows. Type and value imports share
-      // a band — the plugin's default splits them, which would scatter a
-      // module's `import type { LapMeta }` far from its `import
-      // { openSession }`.
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+      '@stylistic/semi': ['error', 'always'],
+      '@stylistic/comma-dangle': ['error', 'always-multiline'],
+      '@stylistic/arrow-parens': ['error', 'always'],
+      '@stylistic/max-len': [
+        'error', { 
+          code: 100,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+        },
+      ],
       'perfectionist/sort-imports': [
         'error',
         {
@@ -36,11 +44,6 @@ export default tseslint.config(
           newlinesBetween: 1,
         },
       ],
-      // The installed eslint-plugin-react-hooks exposes a ready-made flat
-      // config object under `configs.flat['recommended-latest']`; its rules
-      // are spread here (rather than used as a standalone array entry) so
-      // the rule set stays scoped to `.ts`/`.tsx` files instead of applying
-      // react-hooks rules to every file ESLint touches.
       ...reactHooks.configs.flat['recommended-latest'].rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'no-restricted-imports': [
@@ -66,5 +69,4 @@ export default tseslint.config(
     files: ['tests/**/*.ts', 'src/**/__tests__/**/*.ts', '*.config.ts', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },
-  prettier,
 );

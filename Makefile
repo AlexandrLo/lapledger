@@ -6,16 +6,19 @@ RUN     := $(COMPOSE) run --rm app
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install dev down test test-watch lint lint-fix format format-check build check shell image clean clean-all
+.PHONY: help install hooks dev down test test-watch lint lint-fix format format-check build check shell image clean clean-all
 
 help: ## List the available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
 		| awk 'BEGIN { FS = ":.*?## " } { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 }'
 
-install: ## Install dependencies (required on a fresh clone and after pnpm-lock.yaml changes)
+install: hooks ## Install dependencies (required on a fresh clone and after pnpm-lock.yaml changes)
 	$(RUN) pnpm install
 
-dev: ## Serve the app on http://localhost:5173
+hooks: ## Setup githooks
+	git config core.hooksPath .githooks
+
+dev: ## Start dev server
 	$(COMPOSE) up
 
 down: ## Stop the dev server and remove its container
@@ -27,22 +30,19 @@ test: ## Run the test suite once
 test-watch: ## Run the test suite in watch mode
 	$(RUN) pnpm test:watch
 
-lint: ## Report lint violations
-	$(RUN) pnpm lint
+lint-check: ## Report lint violations
+	$(RUN) pnpm lint:check
 
 lint-fix: ## Fix the lint violations that are fixable
 	$(RUN) pnpm lint:fix
 
-format: ## Rewrite the tree with Prettier
-	$(RUN) pnpm format
-
-format-check: ## Report files Prettier would rewrite
-	$(RUN) pnpm format:check
+types-check: ## Run typechecking only
+	$(RUN) pnpm types:check
 
 build: ## Type-check and produce a production build in dist/
 	$(RUN) pnpm build
 
-check: lint format-check test build ## Everything a commit has to pass
+check: lint-check types-check ## Everything a commit has to pass
 
 shell: ## Open a shell in the container
 	$(RUN) sh

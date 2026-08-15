@@ -50,7 +50,7 @@ describe('parseLdx', () => {
   });
 
   it('ignores markers that are not beacons', () => {
-    const xml = `<LDXFile><Marker ClassName="RNG" Name="Range.1" Time="1.0e+08"/></LDXFile>`;
+    const xml = '<LDXFile><Marker ClassName="RNG" Name="Range.1" Time="1.0e+08"/></LDXFile>';
     expect(parseLdx(xml).beaconTimes).toEqual([]);
   });
 });

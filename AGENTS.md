@@ -1,5 +1,8 @@
 # Working in this repository
 
+See `README.md` for what the project does and how to run it. This file covers
+conventions and constraints that aren't there.
+
 ## Stay inside this directory
 
 Everything you may read, run or change lives under this repository. Never read
@@ -8,19 +11,13 @@ files from, run commands in, or write to another project on this machine.
 ## Everything runs in the container
 
 Never run `npm`, `npx`, `pnpm`, `node`, `vite` or `vitest` on the host. The
-toolchain lives in the image defined by `Dockerfile`. The `Makefile` is the
-interface to it — every target wraps a `docker compose` invocation, and
-`make help` lists them:
+toolchain lives in the image defined by `Dockerfile`; the `Makefile` is the
+interface to it — see the README for the everyday targets.
 
-    make install       # required: fresh clone, or after pnpm-lock.yaml changes
-    make dev           # dev server on :5173
-    make test
-    make lint
-    make build
-    make check         # lint + format:check + test + build
-
-For anything without a target — `pnpm add`, `pnpm why` — go through
-`docker compose run --rm app pnpm …` or `make shell`.
+`make check` (`lint-check` + `types-check`) is what runs on every commit:
+`make install` points git at `.githooks` via `make hooks`, and the pre-commit
+hook shells out to `make check`. The hook itself is a plain shell script, so
+it stays outside the "runs in the container" rule above.
 
 `node_modules` and `.pnpm-store` sit in the project tree so an editor's
 language server can resolve imports, but the container is the only thing that
@@ -35,9 +32,6 @@ pnpm only; `package-lock.json` must never come back. `pnpm-workspace.yaml` sets
 ago will not resolve — that is a supply-chain guard, not a bug. Install
 lifecycle scripts are blocked by `onlyBuiltDependencies: []`; adding a package
 there is a deliberate decision, not a workaround.
-
-The pnpm version is pinned twice, in `package.json`'s `packageManager` field and
-in the Dockerfile's `PNPM_VERSION` argument. Move both together.
 
 A package whose install is blocked by `onlyBuiltDependencies` needs a
 replacement, not an entry in the allow-list. `eslint-plugin-import-x` was
@@ -96,9 +90,10 @@ one there.
 
 ## Style
 
-ESLint flat config plus Prettier. `pnpm lint` and `pnpm format:check` must be
-clean before a commit. Suppress a rule only with an inline comment explaining
-why the rule is wrong for that line.
+ESLint flat config, including formatting rules (quotes, semicolons, trailing
+commas, arrow-function parens) via `@stylistic/eslint-plugin` — there is no
+Prettier. `pnpm lint:check` must be clean before a commit. Suppress a rule
+only with an inline comment explaining why the rule is wrong for that line.
 
 Documentation, code comments and commit messages are written in English.
 Commit messages follow Conventional Commits and carry no `Co-Authored-By`
