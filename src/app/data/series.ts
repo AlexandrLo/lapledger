@@ -9,9 +9,9 @@ export type SeriesCache = {
   forget(sessionId: SessionId): void;
 };
 
-// A character no channel name, venue or session id can contain, so no key
-// can be confused with another.
-const SEP = ' ';
+// NUL cannot appear in a channel name, venue or session id, so no two
+// different keys can collide.
+const SEP = '\u0000';
 
 function lapPart(lap: LapRef): string {
   return `${lap.sessionId}${SEP}${lap.lapNumber}`;
