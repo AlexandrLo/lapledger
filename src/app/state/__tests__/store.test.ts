@@ -107,6 +107,21 @@ describe('appStore', () => {
     expect(state().slots.slice(1).filter(Boolean)).toEqual([]);
   });
 
+  it('keeps the other comparison lap in its slot when a different lap is promoted', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s'));
+    const first = { sessionId: 's', lapNumber: 1 };
+    const second = { sessionId: 's', lapNumber: 2 };
+    state().toggleComparison(first);
+    state().toggleComparison(second);
+
+    const secondSlot = slotOf(state().slots, second);
+    state().setReference(first);
+
+    expect(state().slots[0]).toEqual(first);
+    expect(slotOf(state().slots, second)).toBe(secondSlot);
+  });
+
   it('ignores an attempt to compare the reference with itself', () => {
     const state = () => appStore.getState();
     state().addSession(session('s'));
@@ -123,6 +138,22 @@ describe('appStore', () => {
 
     expect(state().sessions).toHaveLength(0);
     expect(state().slots).toEqual([null, null, null]);
+  });
+
+  it('keeps the other session comparison lap in place when a session is removed', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s'));
+    state().addSession(session('t'));
+    const fromS = { sessionId: 's', lapNumber: 1 };
+    const fromT = { sessionId: 't', lapNumber: 1 };
+    state().toggleComparison(fromS);
+    state().toggleComparison(fromT);
+
+    const fromTSlot = slotOf(state().slots, fromT);
+    state().removeSession('s');
+
+    expect(slotOf(state().slots, fromT)).toBe(fromTSlot);
+    expect(slotOf(state().slots, fromS)).toBe(-1);
   });
 
   it('adds and removes chart channels without duplicating them', () => {
