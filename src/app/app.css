@@ -96,3 +96,16 @@ body {
 }
 
 .readout .numeric { color: var(--ll-numeric); }
+
+.picker { padding: 4px 8px; border-bottom: 1px solid var(--ll-border); }
+.picker input { width: 220px; }
+
+.stack-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 2px 8px;
+  color: var(--ll-text-secondary);
+}
+
+.stack-row + .stack-row { border-top: 1px solid var(--ll-grid-line); }

@@ -1,3 +1,4 @@
+import { ChartStack } from '@app/panels/ChartStack';
 import { DeltaChart } from '@app/panels/DeltaChart';
 import { FileDrop } from '@app/panels/FileDrop';
 import { LapTable } from '@app/panels/LapTable';
@@ -19,6 +20,7 @@ export default function App() {
       </section>
       <section className="panel area-channels">
         <h2>Channels</h2>
+        <ChartStack />
       </section>
     </div>
   );
