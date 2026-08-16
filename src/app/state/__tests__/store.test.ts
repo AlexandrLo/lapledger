@@ -207,6 +207,35 @@ describe('appStore', () => {
     expect(state().slots).toEqual(before);
   });
 
+  it('refuses a second comparison lap from a different venue when there is no reference', () => {
+    const state = () => appStore.getState();
+    // No complete+valid lap in either session, so neither gets a default
+    // reference — slot 0 stays empty throughout.
+    state().addSession(session('s', [lap(0, { complete: false })]));
+    state().addSession({ ...session('t', [lap(0, { complete: false })]), venue: 'other-venue' });
+    const first = { sessionId: 's', lapNumber: 1 };
+
+    state().toggleComparison(first);
+    const before = state().slots;
+    state().toggleComparison({ sessionId: 't', lapNumber: 0 });
+
+    expect(state().slots).toEqual(before);
+    expect(slotOf(state().slots, first)).toBeGreaterThan(0);
+  });
+
+  it('accepts a second comparison lap from the same venue and grid with no reference', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s', [lap(0, { complete: false })]));
+    const first = { sessionId: 's', lapNumber: 1 };
+    const second = { sessionId: 's', lapNumber: 2 };
+
+    state().toggleComparison(first);
+    state().toggleComparison(second);
+
+    expect(slotOf(state().slots, first)).toBeGreaterThan(0);
+    expect(slotOf(state().slots, second)).toBeGreaterThan(0);
+  });
+
   it('clears a comparison lap that no longer matches a newly promoted reference', () => {
     const state = () => appStore.getState();
     state().addSession(session('s'));

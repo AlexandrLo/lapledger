@@ -1,3 +1,5 @@
+import type { LapMeta } from '@core/index';
+
 const MINUS = '−';
 
 /**
@@ -27,4 +29,17 @@ export function formatDelta(seconds: number): string {
 
 export function formatDistance(metres: number): string {
   return `${Math.round(metres)} m`;
+}
+
+/**
+ * The lap number shown to the user. `LapMeta.sourceNumber` is the sim's own
+ * counter and what a driver would call the lap; `LapMeta.number` (and a
+ * `LapRef.lapNumber`) is the lap's unique identity within the session and
+ * must never be printed, because on a real recording two different laps can
+ * report the same source number. Falls back to `fallbackLapNumber` when the
+ * lookup that should have produced `lap` failed, so a stale reference
+ * degrades to a plausible number instead of throwing.
+ */
+export function lapLabel(lap: LapMeta | undefined, fallbackLapNumber: number): number {
+  return lap ? lap.sourceNumber : fallbackLapNumber;
 }

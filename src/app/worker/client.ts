@@ -4,6 +4,8 @@ import type { Request, RequestBody, ResultByKind, Response } from '@worker/proto
 export type ClientPort = {
   postMessage(message: unknown, transfer?: Transferable[]): void;
   addEventListener(type: 'message', listener: (event: MessageEvent) => void): void;
+  addEventListener(type: 'error', listener: (event: ErrorEvent) => void): void;
+  addEventListener(type: 'messageerror', listener: (event: MessageEvent) => void): void;
   terminate(): void;
 };
 
@@ -24,6 +26,15 @@ export function createClient(port: ClientPort): TelemetryClient {
   const pending = new Map<number, Pending>();
   let nextId = 1;
 
+  // Rejects and clears every outstanding request. Used when the worker itself
+  // is gone — a dead or never-loaded worker, an undeserialisable message, or
+  // an explicit terminate() — so a pending promise never hangs forever with
+  // no way for the caller to notice and recover.
+  function failAll(reason: string): void {
+    for (const waiting of pending.values()) waiting.reject(new Error(reason));
+    pending.clear();
+  }
+
   port.addEventListener('message', (event: MessageEvent) => {
     const response = event.data as Response;
     const waiting = pending.get(response.id);
@@ -33,6 +44,14 @@ export function createClient(port: ClientPort): TelemetryClient {
     pending.delete(response.id);
     if (response.ok) waiting.resolve(response.result as never);
     else waiting.reject(new Error(response.message));
+  });
+
+  port.addEventListener('error', (event: ErrorEvent) => {
+    failAll(`worker error: ${event.message}`);
+  });
+
+  port.addEventListener('messageerror', () => {
+    failAll('worker sent a message that could not be deserialised');
   });
 
   return {
@@ -45,6 +64,7 @@ export function createClient(port: ClientPort): TelemetryClient {
       });
     },
     terminate() {
+      failAll('worker terminated');
       port.terminate();
     },
   };

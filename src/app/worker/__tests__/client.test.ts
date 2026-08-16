@@ -3,9 +3,19 @@ import { describe, expect, it, vi } from 'vitest';
 import { createClient, type ClientPort } from '@app/worker/client';
 import type { Request, Response } from '@worker/protocol';
 
-/** A port that answers whatever the test tells it to, one message at a time. */
-function fakePort(answer: (request: Request) => Response): ClientPort & { sent: Request[] } {
-  let listener: ((event: MessageEvent) => void) | undefined;
+/**
+ * A port that answers whatever the test tells it to, one message at a time,
+ * and lets a test fire the `error` or `messageerror` events a real `Worker`
+ * would raise.
+ */
+function fakePort(answer: (request: Request) => Response): ClientPort & {
+  sent: Request[];
+  raiseError(event: Partial<ErrorEvent>): void;
+  raiseMessageError(): void;
+} {
+  let messageListener: ((event: MessageEvent) => void) | undefined;
+  let errorListener: ((event: ErrorEvent) => void) | undefined;
+  let messageErrorListener: ((event: MessageEvent) => void) | undefined;
   const sent: Request[] = [];
 
   return {
@@ -13,12 +23,23 @@ function fakePort(answer: (request: Request) => Response): ClientPort & { sent: 
     postMessage(message: unknown) {
       const request = message as Request;
       sent.push(request);
-      queueMicrotask(() => listener?.({ data: answer(request) } as MessageEvent));
+      queueMicrotask(() => messageListener?.({ data: answer(request) } as MessageEvent));
     },
-    addEventListener(_type: 'message', handler: (event: MessageEvent) => void) {
-      listener = handler;
+    addEventListener(
+      type: 'error' | 'message' | 'messageerror',
+      handler: ((event: ErrorEvent) => void) | ((event: MessageEvent) => void),
+    ) {
+      if (type === 'message') messageListener = handler as (event: MessageEvent) => void;
+      else if (type === 'error') errorListener = handler as (event: ErrorEvent) => void;
+      else messageErrorListener = handler as (event: MessageEvent) => void;
     },
     terminate: vi.fn(),
+    raiseError(event) {
+      errorListener?.(event as ErrorEvent);
+    },
+    raiseMessageError() {
+      messageErrorListener?.({} as MessageEvent);
+    },
   };
 }
 
@@ -80,5 +101,34 @@ describe('createClient', () => {
     ]);
 
     expect(settled).toBe('pending');
+  });
+
+  it('rejects an in-flight request when the worker reports an error', async () => {
+    const port = fakePort((request) => ({
+      id: request.id,
+      ok: true,
+      result: { kind: 'sessionClosed' },
+    }));
+    const client = createClient(port);
+
+    const pending = client.request({ kind: 'closeSession', sessionId: 's' });
+    port.raiseError({ message: 'boom' });
+
+    await expect(pending).rejects.toThrow('boom');
+  });
+
+  it('rejects an in-flight request when the client is terminated', async () => {
+    const port = fakePort((request) => ({
+      id: request.id,
+      ok: true,
+      result: { kind: 'sessionClosed' },
+    }));
+    const client = createClient(port);
+
+    const pending = client.request({ kind: 'closeSession', sessionId: 's' });
+    client.terminate();
+
+    await expect(pending).rejects.toThrow('terminated');
+    expect(port.terminate).toHaveBeenCalledOnce();
   });
 });

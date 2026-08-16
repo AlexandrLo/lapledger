@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore } from 'zustand';
 
 import { gridNodes } from '@app/charts/data';
@@ -6,7 +6,8 @@ import { stackChartOptions } from '@app/charts/options';
 import { UPlotChart } from '@app/charts/UPlotChart';
 import { getTelemetry } from '@app/data/telemetry';
 import { useArrays } from '@app/data/useArrays';
-import { appStore, lapKey } from '@app/state/store';
+import { lapLabel } from '@app/format';
+import { appStore, findLap, lapKey } from '@app/state/store';
 import { LAP_SLOTS } from '@app/theme/palette';
 import type { LapRef } from '@core/index';
 import type { SessionSummary } from '@worker/protocol';
@@ -23,22 +24,36 @@ export function ChartStack() {
   const wanted = useStore(appStore, (state) => state.channels);
   const [pick, setPick] = useState('');
 
-  const drawn: Drawn[] = slots
-    .map((lap, slot) => ({ lap, slot }))
-    .filter((entry): entry is Drawn => entry.lap !== null);
+  // `slots.map().filter()` allocates a fresh array on every render, which
+  // would otherwise make `perChannelData` below recompute (and every chart
+  // lose its zoom) each time an unrelated render happens — such as a
+  // keystroke in the channel picker below. Memoised so it keeps its identity
+  // while `slots` itself hasn't changed.
+  const drawn: Drawn[] = useMemo(
+    () =>
+      slots
+        .map((lap, slot) => ({ lap, slot }))
+        .filter((entry): entry is Drawn => entry.lap !== null),
+    [slots],
+  );
 
   const session = sessions.find((entry) => entry.id === drawn[0]?.lap.sessionId);
 
-  const drawnSessions: SessionSummary[] = [];
-  for (const entry of drawn) {
-    const found = sessions.find((candidate) => candidate.id === entry.lap.sessionId);
-    if (found && !drawnSessions.some((existing) => existing.id === found.id)) {
-      drawnSessions.push(found);
+  const drawnSessions = useMemo(() => {
+    const result: SessionSummary[] = [];
+    for (const entry of drawn) {
+      const found = sessions.find((candidate) => candidate.id === entry.lap.sessionId);
+      if (found && !result.some((existing) => existing.id === found.id)) result.push(found);
     }
-  }
-  const available = sharedChannels(drawnSessions);
+    return result;
+  }, [drawn, sessions]);
 
-  const channels = session ? presentChannels(available, wanted) : [];
+  const available = useMemo(() => sharedChannels(drawnSessions), [drawnSessions]);
+
+  const channels = useMemo(
+    () => (session ? presentChannels(available, wanted) : []),
+    [session, available, wanted],
+  );
 
   const key = [...channels, ...drawn.map((d) => lapKey(d.lap))].join('|');
   const { arrays, error } = useArrays(key, () => {
@@ -47,6 +62,22 @@ export function ChartStack() {
       channels.flatMap((channel) => drawn.map((d) => cache.series(d.lap, channel))),
     );
   });
+
+  // Memoised so each channel's data array keeps its identity across renders
+  // that don't change the grid, the loaded arrays or the channel list —
+  // otherwise a fresh array per channel per render (e.g. from a keystroke in
+  // the channel picker) would reset every chart's zoom.
+  const perChannelData = useMemo(() => {
+    if (!session || arrays === null) return null;
+    const grid = gridNodes(session.grid);
+    const rows: { channel: string; data: [Float64Array, ...Float32Array[]] }[] = [];
+    for (const [row, channel] of channels.entries()) {
+      const values = arrays.slice(row * drawn.length, (row + 1) * drawn.length);
+      if (values.length !== drawn.length) continue;
+      rows.push({ channel, data: [grid, ...values] });
+    }
+    return rows;
+  }, [session, arrays, channels, drawn]);
 
   if (!session) return <p className="hint">Load a recording to see the channels.</p>;
   if (error !== null) return <p className="error">{error}</p>;
@@ -72,13 +103,11 @@ export function ChartStack() {
         </datalist>
       </div>
 
-      {arrays === null ? (
+      {perChannelData === null ? (
         <p className="hint">Resampling…</p>
       ) : (
-        channels.map((channel, row) => {
+        perChannelData.map(({ channel, data }) => {
           const info = channelInfo(available, channel);
-          const values = arrays.slice(row * drawn.length, (row + 1) * drawn.length);
-          if (values.length !== drawn.length) return null;
 
           return (
             <div className="stack-row" key={channel}>
@@ -96,11 +125,11 @@ export function ChartStack() {
                   unit: info.unit,
                   discrete: info.discrete,
                   lines: drawn.map((d) => ({
-                    label: `Lap ${d.lap.lapNumber}`,
+                    label: `Lap ${lapLabel(findLap(sessions, d.lap), d.lap.lapNumber)}`,
                     stroke: LAP_SLOTS[d.slot],
                   })),
                 })}
-                data={[gridNodes(session.grid), ...values]}
+                data={data}
               />
             </div>
           );

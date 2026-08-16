@@ -28,7 +28,18 @@ async function openFiles(files: File[]): Promise<void> {
   }
 }
 
-export function FileDrop() {
+export type FileDropState = {
+  busy: boolean;
+  error: string | null;
+  load(files: File[]): void;
+};
+
+/**
+ * Loads dropped or chosen files and tracks progress. Lifted out of the
+ * `FileDrop` control so `App` can share the same busy/error state with the
+ * drop zone that spans the whole layout, rather than loading files twice.
+ */
+export function useFileDrop(): FileDropState {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,15 +51,12 @@ export function FileDrop() {
       .finally(() => setBusy(false));
   }, []);
 
+  return { busy, error, load };
+}
+
+export function FileDrop({ busy, error, load }: FileDropState) {
   return (
-    <div
-      className="file-drop"
-      onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => {
-        event.preventDefault();
-        load([...event.dataTransfer.files]);
-      }}
-    >
+    <div className="file-drop">
       <label>
         {busy ? 'Reading…' : 'Drop .ld and .ldx here, or choose files'}
         <input

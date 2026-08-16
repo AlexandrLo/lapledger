@@ -1,7 +1,7 @@
 import { useStore } from 'zustand';
 
 import { getTelemetry } from '@app/data/telemetry';
-import { formatDelta, formatLapTime } from '@app/format';
+import { formatDelta, formatLapTime, lapLabel } from '@app/format';
 import { appStore, canCompare, slotOf } from '@app/state/store';
 import { LAP_SLOTS } from '@app/theme/palette';
 import type { SessionId } from '@core/index';
@@ -50,7 +50,7 @@ export function LapTable() {
                         <span style={{ background: LAP_SLOTS[slot] }} className="swatch" />
                       )}
                     </td>
-                    <td>{lap.sourceNumber}</td>
+                    <td>{lapLabel(lap, lap.number)}</td>
                     <td className="numeric">
                       {formatLapTime(lap.lapTime, lap.lapTimeApproximate)}
                     </td>

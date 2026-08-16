@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useStore } from 'zustand';
 
 import { gridNodes } from '@app/charts/data';
@@ -5,8 +6,8 @@ import { deltaChartOptions } from '@app/charts/options';
 import { UPlotChart } from '@app/charts/UPlotChart';
 import { getTelemetry } from '@app/data/telemetry';
 import { useArrays } from '@app/data/useArrays';
-import { formatDelta, formatDistance } from '@app/format';
-import { appStore, lapKey } from '@app/state/store';
+import { formatDelta, formatDistance, lapLabel } from '@app/format';
+import { appStore, findLap, lapKey } from '@app/state/store';
 import { LAP_SLOTS } from '@app/theme/palette';
 import type { LapRef } from '@core/index';
 
@@ -34,18 +35,27 @@ export function DeltaChart() {
   });
 
   const session = sessions.find((entry) => entry.id === reference?.sessionId);
+
+  // Memoised so identity only changes with the grid or the loaded arrays —
+  // not on every cursor move — otherwise UPlotChart's data effect fires on
+  // each pointer move and resets the zoom the chart options enable.
+  const data = useMemo(() => {
+    if (!session || arrays === null) return null;
+    return [gridNodes(session.grid), ...arrays];
+  }, [session, arrays]);
+
   if (!reference || !session) return <p className="hint">Load a recording to see the delta.</p>;
   if (comparisons.length === 0) {
     return <p className="hint">Mark a lap as “cmp” to compare it with the reference.</p>;
   }
   if (error !== null) return <p className="error">{error}</p>;
-  if (arrays === null) return <p className="hint">Computing…</p>;
+  if (arrays === null || data === null) return <p className="hint">Computing…</p>;
 
   const options = deltaChartOptions({
     width: 800,
     height: HEIGHT,
     lines: comparisons.map((c) => ({
-      label: `Lap ${c.lap.lapNumber}`,
+      label: `Lap ${lapLabel(findLap(sessions, c.lap), c.lap.lapNumber)}`,
       stroke: LAP_SLOTS[c.slot],
     })),
   });
@@ -60,7 +70,7 @@ export function DeltaChart() {
         </span>
         {comparisons.map((c, line) => (
           <span key={lapKey(c.lap)} style={{ color: LAP_SLOTS[c.slot] }}>
-            Lap {c.lap.lapNumber}{' '}
+            Lap {lapLabel(findLap(sessions, c.lap), c.lap.lapNumber)}{' '}
             <span className="numeric">
               {index === null || !arrays[line] || arrays[line][index] === undefined
                 ? '—'
@@ -69,11 +79,7 @@ export function DeltaChart() {
           </span>
         ))}
       </div>
-      <UPlotChart
-        recreateKey={key}
-        options={options}
-        data={[gridNodes(session.grid), ...arrays]}
-      />
+      <UPlotChart recreateKey={key} options={options} data={data} />
     </div>
   );
 }

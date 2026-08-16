@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 
 import { LAP_SLOTS } from '@app/theme/palette';
-import type { LapRef, SessionId } from '@core/index';
+import type { LapMeta, LapRef, SessionId } from '@core/index';
 import type { SessionSummary } from '@worker/protocol';
 
 /** Slot 0 is the reference; the rest are comparisons. */
@@ -31,6 +31,12 @@ export function slotOf(slots: readonly (LapRef | null)[], lap: LapRef): number {
 
 export function drawnLaps(slots: readonly (LapRef | null)[]): LapRef[] {
   return slots.filter((slot): slot is LapRef => slot !== null);
+}
+
+/** The full lap this ref points to, or `undefined` if its session isn't loaded. */
+export function findLap(sessions: readonly SessionSummary[], ref: LapRef): LapMeta | undefined {
+  const session = sessions.find((entry) => entry.id === ref.sessionId);
+  return session?.laps.find((lap) => lap.number === ref.lapNumber);
 }
 
 /**
@@ -130,8 +136,12 @@ export const appStore = createStore<AppState>()((set, get) => ({
         return { slots };
       }
 
+      // With no reference seated, a candidate must still agree with whatever
+      // comparisons are already there — otherwise two incomparable laps could
+      // occupy slots together and get overlaid on a grid neither of them owns.
       const reference = slots[0];
-      if (reference && !canCompare(state.sessions, reference, lap)) return state;
+      const against = reference ? [reference] : drawnLaps(slots.slice(1));
+      if (against.some((existing) => !canCompare(state.sessions, existing, lap))) return state;
 
       const free = slots.findIndex((slot, index) => index > 0 && slot === null);
       if (free === -1) return state;

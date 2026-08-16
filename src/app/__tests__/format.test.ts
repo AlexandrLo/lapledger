@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDelta, formatDistance, formatLapTime } from '@app/format';
+import { formatDelta, formatDistance, formatLapTime, lapLabel } from '@app/format';
+import type { LapMeta } from '@core/index';
+
+function lapMeta(overrides: Partial<LapMeta> = {}): LapMeta {
+  return {
+    number: 0,
+    sourceNumber: 0,
+    startTime: 0,
+    endTime: 100,
+    lapTime: 100,
+    lapTimeApproximate: false,
+    valid: true,
+    complete: true,
+    startIndex: 0,
+    endIndex: 1,
+    ...overrides,
+  };
+}
 
 describe('formatLapTime', () => {
   it('renders minutes, seconds and milliseconds', () => {
@@ -41,5 +58,15 @@ describe('formatDistance', () => {
   it('rounds to whole metres', () => {
     expect(formatDistance(1234.6)).toBe('1235 m');
     expect(formatDistance(0)).toBe('0 m');
+  });
+});
+
+describe('lapLabel', () => {
+  it('shows the sim source number, not the internal index', () => {
+    expect(lapLabel(lapMeta({ number: 3, sourceNumber: 4 }), 99)).toBe(4);
+  });
+
+  it('falls back to the given lap number when the lap could not be found', () => {
+    expect(lapLabel(undefined, 5)).toBe(5);
   });
 });
