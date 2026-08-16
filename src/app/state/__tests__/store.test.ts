@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   appStore,
+  canCompare,
   drawnLaps,
   lapKey,
   pickDefaultReference,
@@ -182,5 +183,42 @@ describe('appStore', () => {
     expect(lapKey({ sessionId: 'a', lapNumber: 1 })).not.toBe(
       lapKey({ sessionId: 'b', lapNumber: 1 }),
     );
+  });
+
+  it('refuses a comparison lap from a different venue and leaves the slots untouched', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s'));
+    state().addSession({ ...session('t'), venue: 'other-venue' });
+
+    const before = state().slots;
+    state().toggleComparison({ sessionId: 't', lapNumber: 0 });
+
+    expect(state().slots).toEqual(before);
+  });
+
+  it('refuses a same-venue comparison lap whose grid has a different point count', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s'));
+    state().addSession({ ...session('t'), grid: { ...session('t').grid, points: 500 } });
+
+    const before = state().slots;
+    state().toggleComparison({ sessionId: 't', lapNumber: 0 });
+
+    expect(state().slots).toEqual(before);
+  });
+
+  it('clears a comparison lap that no longer matches a newly promoted reference', () => {
+    const state = () => appStore.getState();
+    state().addSession(session('s'));
+    state().addSession({ ...session('t'), venue: 'other-venue' });
+    const reference = { sessionId: 's', lapNumber: 0 };
+    const comparison = { sessionId: 's', lapNumber: 1 };
+    state().toggleComparison(comparison);
+    expect(canCompare(state().sessions, reference, comparison)).toBe(true);
+
+    state().setReference({ sessionId: 't', lapNumber: 0 });
+
+    expect(state().slots[0]).toEqual({ sessionId: 't', lapNumber: 0 });
+    expect(state().slots.slice(1).filter(Boolean)).toEqual([]);
   });
 });

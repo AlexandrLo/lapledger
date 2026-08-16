@@ -1,4 +1,5 @@
 import type { ChannelMeta } from '@core/index';
+import type { SessionSummary } from '@worker/protocol';
 
 export type ChannelInfo = { unit: string; discrete: boolean };
 
@@ -19,4 +20,18 @@ export function channelInfo(available: ChannelMeta[], name: string): ChannelInfo
   return channel
     ? { unit: channel.unit, discrete: channel.discrete }
     : { unit: '', discrete: false };
+}
+
+/**
+ * The channels every one of these sessions carries.
+ *
+ * A channel only one drawn session has cannot be plotted for the other lap,
+ * and asking for it rejects the whole batch — so it is never offered.
+ */
+export function sharedChannels(sessions: readonly SessionSummary[]): ChannelMeta[] {
+  const [first, ...rest] = sessions;
+  if (!first) return [];
+  return first.channels.filter((channel) =>
+    rest.every((session) => session.channels.some((other) => other.name === channel.name)),
+  );
 }

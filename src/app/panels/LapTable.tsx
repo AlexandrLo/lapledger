@@ -2,7 +2,7 @@ import { useStore } from 'zustand';
 
 import { getTelemetry } from '@app/data/telemetry';
 import { formatDelta, formatLapTime } from '@app/format';
-import { appStore, slotOf } from '@app/state/store';
+import { appStore, canCompare, slotOf } from '@app/state/store';
 import { LAP_SLOTS } from '@app/theme/palette';
 import type { SessionId } from '@core/index';
 
@@ -40,6 +40,9 @@ export function LapTable() {
               {buildLapRows(session.laps).map(({ lap, gapToBest }) => {
                 const ref = { sessionId: session.id, lapNumber: lap.number };
                 const slot = slotOf(slots, ref);
+                const reference = slots[0];
+                const incomparable =
+                  slot < 0 && reference !== null && !canCompare(sessions, reference, ref);
                 return (
                   <tr key={lap.number} className={slot === 0 ? 'reference' : undefined}>
                     <td className="chip">
@@ -68,7 +71,8 @@ export function LapTable() {
                       </button>
                       <button
                         type="button"
-                        disabled={slot === 0}
+                        disabled={slot === 0 || incomparable}
+                        title={incomparable ? 'venue or distance grid differs' : undefined}
                         onClick={() => toggleComparison(ref)}
                       >
                         {slot > 0 ? 'drop' : 'cmp'}

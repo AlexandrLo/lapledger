@@ -9,8 +9,9 @@ import { useArrays } from '@app/data/useArrays';
 import { appStore, lapKey } from '@app/state/store';
 import { LAP_SLOTS } from '@app/theme/palette';
 import type { LapRef } from '@core/index';
+import type { SessionSummary } from '@worker/protocol';
 
-import { channelInfo, presentChannels } from './channels';
+import { channelInfo, presentChannels, sharedChannels } from './channels';
 
 const HEIGHT = 120;
 
@@ -27,7 +28,17 @@ export function ChartStack() {
     .filter((entry): entry is Drawn => entry.lap !== null);
 
   const session = sessions.find((entry) => entry.id === drawn[0]?.lap.sessionId);
-  const channels = session ? presentChannels(session.channels, wanted) : [];
+
+  const drawnSessions: SessionSummary[] = [];
+  for (const entry of drawn) {
+    const found = sessions.find((candidate) => candidate.id === entry.lap.sessionId);
+    if (found && !drawnSessions.some((existing) => existing.id === found.id)) {
+      drawnSessions.push(found);
+    }
+  }
+  const available = sharedChannels(drawnSessions);
+
+  const channels = session ? presentChannels(available, wanted) : [];
 
   const key = [...channels, ...drawn.map((d) => lapKey(d.lap))].join('|');
   const { arrays, error } = useArrays(key, () => {
@@ -55,7 +66,7 @@ export function ChartStack() {
           }}
         />
         <datalist id="channel-options">
-          {session.channels.map((channel) => (
+          {available.map((channel) => (
             <option key={channel.name} value={channel.name} />
           ))}
         </datalist>
@@ -65,7 +76,7 @@ export function ChartStack() {
         <p className="hint">Resampling…</p>
       ) : (
         channels.map((channel, row) => {
-          const info = channelInfo(session.channels, channel);
+          const info = channelInfo(available, channel);
           const values = arrays.slice(row * drawn.length, (row + 1) * drawn.length);
           if (values.length !== drawn.length) return null;
 

@@ -47,6 +47,24 @@ export function pickDefaultReference(session: SessionSummary): LapRef | null {
   return best ? { sessionId: session.id, lapNumber: best.number } : null;
 }
 
+/**
+ * Two laps may be overlaid only if they lie on the same distance grid: the
+ * same venue, and the same number of grid nodes. The worker refuses a delta
+ * across venues anyway — refusing the selection is what stops the panels from
+ * asking for arrays they cannot align, and what stops a click that silently
+ * does nothing.
+ */
+export function canCompare(
+  sessions: readonly SessionSummary[],
+  a: LapRef,
+  b: LapRef,
+): boolean {
+  const first = sessions.find((session) => session.id === a.sessionId);
+  const second = sessions.find((session) => session.id === b.sessionId);
+  if (!first || !second) return false;
+  return first.venue === second.venue && first.grid.points === second.grid.points;
+}
+
 export type AppState = {
   sessions: SessionSummary[];
   slots: (LapRef | null)[];
@@ -93,6 +111,10 @@ export const appStore = createStore<AppState>()((set, get) => ({
     set((state) => {
       const slots = state.slots.map((slot) => (sameLap(slot, lap) ? null : slot));
       slots[0] = lap;
+      for (let index = 1; index < slots.length; index++) {
+        const comparison = slots[index];
+        if (comparison && !canCompare(state.sessions, lap, comparison)) slots[index] = null;
+      }
       return { slots };
     });
   },
@@ -107,6 +129,9 @@ export const appStore = createStore<AppState>()((set, get) => ({
         slots[held] = null;
         return { slots };
       }
+
+      const reference = slots[0];
+      if (reference && !canCompare(state.sessions, reference, lap)) return state;
 
       const free = slots.findIndex((slot, index) => index > 0 && slot === null);
       if (free === -1) return state;
