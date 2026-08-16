@@ -87,3 +87,12 @@ body {
 }
 
 .secondary { color: var(--ll-text-secondary); }
+
+.readout {
+  display: flex;
+  gap: 16px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--ll-border);
+}
+
+.readout .numeric { color: var(--ll-numeric); }

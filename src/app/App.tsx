@@ -1,3 +1,4 @@
+import { DeltaChart } from '@app/panels/DeltaChart';
 import { FileDrop } from '@app/panels/FileDrop';
 import { LapTable } from '@app/panels/LapTable';
 
@@ -14,6 +15,7 @@ export default function App() {
       </aside>
       <section className="panel area-delta">
         <h2>Delta</h2>
+        <DeltaChart />
       </section>
       <section className="panel area-channels">
         <h2>Channels</h2>
