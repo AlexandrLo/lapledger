@@ -7,8 +7,12 @@ const MINUS = '−';
  */
 export function formatLapTime(seconds: number, approximate = false): string {
   const decimals = approximate ? 1 : 3;
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds - minutes * 60;
+  const scale = 10 ** decimals;
+  // Round first, then split. Deriving the minutes from the unrounded value
+  // lets a lap of 119.96 s round its seconds up to 60.0 and print "1:60.0".
+  const ticks = Math.round(seconds * scale);
+  const minutes = Math.floor(ticks / (60 * scale));
+  const rest = (ticks - minutes * 60 * scale) / scale;
   const padded = rest.toFixed(decimals).padStart(decimals + 3, '0');
   return `${approximate ? '~' : ''}${minutes}:${padded}`;
 }

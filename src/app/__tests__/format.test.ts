@@ -16,6 +16,14 @@ describe('formatLapTime', () => {
   it('renders a lap over ten minutes without truncating', () => {
     expect(formatLapTime(725.25)).toBe('12:05.250');
   });
+
+  it('rounds seconds up across the minute boundary', () => {
+    expect(formatLapTime(59.9999)).toBe('1:00.000');
+  });
+
+  it('rounds seconds up across the minute boundary in the approximate branch', () => {
+    expect(formatLapTime(119.96, true)).toBe('~2:00.0');
+  });
 });
 
 describe('formatDelta', () => {
