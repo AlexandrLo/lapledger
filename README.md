@@ -48,3 +48,19 @@ run it through `docker compose run --rm app`:
 docker compose run --rm app pnpm add some-package
 ```
 
+## Using it
+
+Start the dev server with `make dev` and open `http://localhost:5173`, then
+drop a `.ld` file — with its `.ldx` beside it, if there is one — onto the
+window. The file is parsed in a Web Worker; the page only ever receives lap
+metadata and the small arrays it draws.
+
+Pick one lap as the reference and up to two more to compare with it. The delta
+chart reads as accumulated time against distance: the zero line is the
+reference lap, and a line rising means that lap is losing time at that point on
+track. The channel charts below share the same distance axis and the same
+cursor.
+
+Three laps are drawn at once at most. That is a legibility limit, not an
+arbitrary one — a fourth colour cannot be told apart from the other three.
+
