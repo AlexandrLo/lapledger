@@ -69,3 +69,21 @@ body {
 
 .hint { color: var(--ll-text-secondary); padding: 8px; }
 .error { color: var(--ll-critical); padding: 8px; }
+
+.lap-table table { width: 100%; border-collapse: collapse; }
+.lap-table td { padding: 1px 4px; white-space: nowrap; }
+.lap-table tr.reference { background: var(--ll-selected-row); }
+.lap-table .numeric { color: var(--ll-numeric); text-align: right; }
+.lap-table .gap { color: var(--ll-text-secondary); }
+.lap-table .flags abbr { color: var(--ll-warning); margin-right: 4px; }
+.lap-table .swatch { display: inline-block; width: 8px; height: 8px; }
+
+.session-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--ll-border);
+}
+
+.secondary { color: var(--ll-text-secondary); }
