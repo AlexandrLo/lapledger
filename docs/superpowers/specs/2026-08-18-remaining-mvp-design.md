@@ -286,8 +286,8 @@ The left side contains one active tab labelled `LAYOUT 01`. It is an intentional
 visual placeholder for future multiple-layout support: it cannot be selected,
 renamed, closed, reordered, or duplicated in this MVP.
 
-The right side contains Documentation and the application version linked to its
-release page.
+The right side contains a link to the project's GitHub repository and the
+application version as non-interactive text.
 
 ## 8. Widget workspace
 
