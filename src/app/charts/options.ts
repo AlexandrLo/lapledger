@@ -25,6 +25,9 @@ function base(params: ChartParams): Omit<uPlot.Options, 'series'> {
   return {
     width: params.width,
     height: params.height,
+    scales: {
+      x: { time: false },
+    },
     cursor: {
       // Only x is shared: two channels on different scales must keep their own
       // y, or a zoom on one would squash the other.
@@ -34,6 +37,7 @@ function base(params: ChartParams): Omit<uPlot.Options, 'series'> {
     legend: { live: true },
     axes: [
       {
+        label: 'Distance (m)',
         stroke: palette.textSecondary,
         grid: { stroke: palette.gridLine, width: 1 },
         ticks: { stroke: palette.gridLine, width: 1 },

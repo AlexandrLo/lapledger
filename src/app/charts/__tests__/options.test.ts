@@ -31,6 +31,13 @@ describe('deltaChartOptions', () => {
     expect(options.cursor?.sync?.scales).toEqual(['x', null]);
   });
 
+  it('treats the x values as distance rather than Unix timestamps', () => {
+    const options = deltaChartOptions({ width: 800, height: 200, lines: LINES });
+
+    expect(options.scales?.x?.time).toBe(false);
+    expect(options.axes?.[0]?.label).toBe('Distance (m)');
+  });
+
   it('sizes itself to what it was given', () => {
     const options = deltaChartOptions({ width: 640, height: 180, lines: LINES });
 
@@ -40,6 +47,19 @@ describe('deltaChartOptions', () => {
 });
 
 describe('stackChartOptions', () => {
+  it('treats the x values as distance rather than Unix timestamps', () => {
+    const options = stackChartOptions({
+      width: 800,
+      height: 120,
+      lines: LINES,
+      unit: 'km/h',
+      discrete: false,
+    });
+
+    expect(options.scales?.x?.time).toBe(false);
+    expect(options.axes?.[0]?.label).toBe('Distance (m)');
+  });
+
   it('labels the y axis with the channel unit', () => {
     const options = stackChartOptions({
       width: 800,

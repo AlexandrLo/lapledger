@@ -15,12 +15,6 @@ export type UPlotChartProps = {
   recreateKey: string;
 };
 
-/**
- * Remounts the instance below whenever the chart's shape changes, so that
- * component can build uPlot once, on mount, from the props it was given. The
- * alternative — reading the current props out of a ref — would mean writing to
- * that ref during render, which the React Compiler lint rules reject.
- */
 export function UPlotChart({ options, data, recreateKey }: UPlotChartProps) {
   return <UPlotInstance key={recreateKey} options={options} data={data} />;
 }
