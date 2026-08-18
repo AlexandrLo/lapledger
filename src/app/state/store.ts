@@ -1,3 +1,4 @@
+import { devtools } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
 import { LAP_SLOTS } from '@app/theme/palette';
@@ -95,76 +96,102 @@ const initial = (): Pick<AppState, 'sessions' | 'slots' | 'cursor' | 'channels'>
   channels: [...DEFAULT_CHANNELS],
 });
 
-export const appStore = createStore<AppState>()((set, get) => ({
-  ...initial(),
+export const appStore = createStore<AppState>()(
+  devtools(
+    (set, get) => ({
+      ...initial(),
 
-  addSession(session) {
-    set((state) => ({ sessions: [...state.sessions, session] }));
-    if (get().slots[0] === null) {
-      const reference = pickDefaultReference(session);
-      if (reference) get().setReference(reference);
-    }
-  },
+      addSession(session) {
+        set((state) => ({ sessions: [...state.sessions, session] }), undefined, 'session/add');
+        if (get().slots[0] === null) {
+          const reference = pickDefaultReference(session);
+          if (reference) get().setReference(reference);
+        }
+      },
 
-  removeSession(sessionId) {
-    set((state) => ({
-      sessions: state.sessions.filter((session) => session.id !== sessionId),
-      slots: state.slots.map((slot) => (slot?.sessionId === sessionId ? null : slot)),
-    }));
-  },
+      removeSession(sessionId) {
+        set(
+          (state) => ({
+            sessions: state.sessions.filter((session) => session.id !== sessionId),
+            slots: state.slots.map((slot) => (slot?.sessionId === sessionId ? null : slot)),
+          }),
+          undefined,
+          'session/remove',
+        );
+      },
 
-  setReference(lap) {
-    set((state) => {
-      const slots = state.slots.map((slot) => (sameLap(slot, lap) ? null : slot));
-      slots[0] = lap;
-      for (let index = 1; index < slots.length; index++) {
-        const comparison = slots[index];
-        if (comparison && !canCompare(state.sessions, lap, comparison)) slots[index] = null;
-      }
-      return { slots };
-    });
-  },
+      setReference(lap) {
+        set(
+          (state) => {
+            const slots = state.slots.map((slot) => (sameLap(slot, lap) ? null : slot));
+            slots[0] = lap;
+            for (let index = 1; index < slots.length; index++) {
+              const comparison = slots[index];
+              if (comparison && !canCompare(state.sessions, lap, comparison)) slots[index] = null;
+            }
+            return { slots };
+          },
+          undefined,
+          'lap/setReference',
+        );
+      },
 
-  toggleComparison(lap) {
-    set((state) => {
-      if (sameLap(state.slots[0], lap)) return state;
+      toggleComparison(lap) {
+        set(
+          (state) => {
+            if (sameLap(state.slots[0], lap)) return state;
 
-      const slots = [...state.slots];
-      const held = slotOf(slots, lap);
-      if (held > 0) {
-        slots[held] = null;
-        return { slots };
-      }
+            const slots = [...state.slots];
+            const held = slotOf(slots, lap);
+            if (held > 0) {
+              slots[held] = null;
+              return { slots };
+            }
 
-      // With no reference seated, a candidate must still agree with whatever
-      // comparisons are already there — otherwise two incomparable laps could
-      // occupy slots together and get overlaid on a grid neither of them owns.
-      const reference = slots[0];
-      const against = reference ? [reference] : drawnLaps(slots.slice(1));
-      if (against.some((existing) => !canCompare(state.sessions, existing, lap))) return state;
+            // With no reference seated, a candidate must still agree with whatever
+            // comparisons are already there — otherwise two incomparable laps could
+            // occupy slots together and get overlaid on a grid neither of them owns.
+            const reference = slots[0];
+            const against = reference ? [reference] : drawnLaps(slots.slice(1));
+            if (against.some((existing) => !canCompare(state.sessions, existing, lap))) {
+              return state;
+            }
 
-      const free = slots.findIndex((slot, index) => index > 0 && slot === null);
-      if (free === -1) return state;
-      slots[free] = lap;
-      return { slots };
-    });
-  },
+            const free = slots.findIndex((slot, index) => index > 0 && slot === null);
+            if (free === -1) return state;
+            slots[free] = lap;
+            return { slots };
+          },
+          undefined,
+          'lap/toggleComparison',
+        );
+      },
 
-  setCursor(distance) {
-    set({ cursor: distance });
-  },
+      setCursor(distance) {
+        set({ cursor: distance }, undefined, 'cursor/set');
+      },
 
-  addChannel(name) {
-    set((state) =>
-      state.channels.includes(name) ? state : { channels: [...state.channels, name] },
-    );
-  },
+      addChannel(name) {
+        set(
+          (state) =>
+            state.channels.includes(name) ? state : { channels: [...state.channels, name] },
+          undefined,
+          'channel/add',
+        );
+      },
 
-  removeChannel(name) {
-    set((state) => ({ channels: state.channels.filter((channel) => channel !== name) }));
-  },
+      removeChannel(name) {
+        set(
+          (state) => ({ channels: state.channels.filter((channel) => channel !== name) }),
+          undefined,
+          'channel/remove',
+        );
+      },
 
-  reset() {
-    set(initial());
-  },
-}));
+      reset() {
+        set(initial(), undefined, 'store/reset');
+      },
+    }),
+    { name: 'LapLedger' },
+  ),
+);
